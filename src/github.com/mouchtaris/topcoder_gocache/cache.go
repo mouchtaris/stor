@@ -19,8 +19,8 @@ func (db *Cache) untrackedGet (key string) (item string, present bool) {
 
 //
 // Construct and initialise a Cache.
-func MakeCache () Cache {
-    return Cache {
+func NewCache () *Cache {
+    return &Cache {
         map[string] string { },
         0, 0, 0, 0, 0, 0, 0, 0,
     }

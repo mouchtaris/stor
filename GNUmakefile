@@ -2,15 +2,19 @@ _build/github.com/mouchtaris/%.o: src/github.com/mouchtaris/%/*.go
 	gccgo -I _build -c -o $@ -pedantic -Wall -Wextra $^
 
 pkgdir = _build/github.com/mouchtaris/topcoder_gocache
+dirs = \
+	${pkgdir}/parser
 
 all: gcc go
-gcc: ${pkgdir} lol
+gcc: ${dirs} lol
 clean:
 	rm -rvf _build pkg bin
-${pkgdir}:
+${dirs}:
 	mkdir -pv $@
 lol: \
      ${pkgdir}/command.o \
+     ${pkgdir}/parser/lextoken.o \
+     ${pkgdir}/parser.o \
      ${pkgdir}.o \
      ${pkgdir}_test.o
 	gccgo -o $@ $^
