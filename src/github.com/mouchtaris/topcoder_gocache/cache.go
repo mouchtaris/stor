@@ -12,8 +12,9 @@ type Cache struct {
 
 //
 // Make a cache get without updating statistics.
-func (db *Datbaase) untrackedGet (key string) (item string, present bool) {
+func (db *Cache) untrackedGet (key string) (item string, present bool) {
     item, present = db.entries[key]
+    return
 }
 
 //
