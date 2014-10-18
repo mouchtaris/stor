@@ -26,4 +26,8 @@ func main () {
 
     r := strings.NewReader("set asok asadsadpd")
     fmt.Println(parser.NextToken(r))
+
+    fmt.Println(byte("ad  d"[3]))
+    fmt.Printf("%T\n", "sda")
+    fmt.Printf("%T\n", "sda"[1])
 }
