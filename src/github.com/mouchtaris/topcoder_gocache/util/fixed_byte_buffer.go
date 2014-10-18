@@ -6,9 +6,13 @@ import (
 )
 
 var ErrBufferUnderflow = errors.New("buffer underflow")
+var ErrBufferOverflow = errors.New("buffer overflow")
 
 func Min (a, b int) int {
-    return a < b? a : b
+    if (a < b) {
+        return a
+    }
+    return b
 }
 
 //
@@ -34,14 +38,14 @@ func NewFixedByteBuffer (mem []byte, start, end, pos, limit uint32) *FixedByteBu
     return &FixedByteBuffer { mem[start:end], pos, limit }
 }
 
-func NewFixedByteBuffer (mem []byte) *FixedByteBuffer {
-    return NewFixedByteBuffer(mem, 0, len(mem), 0, len(mem))
+func NewFixedByteBufferSimple (mem []byte) *FixedByteBuffer {
+    return NewFixedByteBuffer(mem, 0, uint32(len(mem)), 0, uint32(len(mem)))
 }
 
 //
 // freeBytes() returns a slice view which includes only
 // the available space of the buffer, ie, buf[pos:limit].
-func (buf *FixedByteBuffer) freeBytes () {
+func (buf *FixedByteBuffer) freeBytes () []byte {
     return buf.mem[buf.pos:buf.limit]
 }
 
@@ -52,7 +56,7 @@ func (buf *FixedByteBuffer) freeBytes () {
 func (buf *FixedByteBuffer) ReadFrom (r io.Reader) (bytesWritten int, err error) {
     bytesWritten, err = r.Read(buf.freeBytes())
     if (bytesWritten > 0) {
-        buf.pos += bytesWritten
+        buf.pos += uint32(bytesWritten)
     }
     return
 }
@@ -65,7 +69,7 @@ func (buf *FixedByteBuffer) ReadByte () (byte, error) {
         return 0, io.EOF
     }
     result := buf.mem[buf.pos]
-    ++buf.pos
+    buf.pos++
     return result, nil
 }
 
@@ -85,11 +89,11 @@ func (buf *FixedByteBuffer) StepBack (n uint32) error {
 }
 
 //
-// Construct and return a string which includes bytes
+// Return a view into the memory buffer which includes bytes
 // [pos - n, pos). If n is too crazy, the underlying
 // memory slice will panic.
-func (buf *FixedByteBuffer) StringSnapshot (n uint32) string {
-    return string(buf.mem[buf.pos - n, buf.pos])
+func (buf *FixedByteBuffer) Snapshot (n uint32) []byte {
+    return buf.mem[buf.pos - n : buf.pos]
 }
 
 //
@@ -102,7 +106,7 @@ func (buf *FixedByteBuffer) Compact () {
         copy(buf.mem[buf.pos:buf.limit], buf.mem)
     }
     buf.pos = buf.limit - buf.pos
-    buf.limit = len(buf.mem)
+    buf.limit = uint32(len(buf.mem))
 }
 
 //
@@ -118,7 +122,7 @@ func (buf *FixedByteBuffer) Flip () {
 // available).
 func (buf *FixedByteBuffer) Clear () {
     buf.pos = 0
-    buf.limit = len(buf.mem)
+    buf.limit = uint32(len(buf.mem))
 }
 
 //

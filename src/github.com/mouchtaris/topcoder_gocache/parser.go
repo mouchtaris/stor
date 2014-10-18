@@ -3,13 +3,13 @@ package topcoder_gocache
 import (
     "github.com/mouchtaris/topcoder_gocache/util"
     "io"
-    "bytes"
 )
 
 const MAX_KEY_SIZE    = 250
 const MAX_VALUE_SIZE  = 8 << 10 // 8KiB
 const LONGEST_COMMAND = 6 // for "delete"
 const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
+
 //
 // The parser is responsible for parsing raw input
 // characters (bytes) into meaningful tokens and
@@ -20,16 +20,14 @@ const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
 //
 type Parser struct {
     r io.Reader
-    buf util.FixedByteBuffer
-    err error
+    buf *util.FixedByteBuffer
     length uint32
 }
 
 func NewParser (r io.Reader) *Parser {
     return &Parser {
         r,
-        util.NewFixedByteBuffer([BUFFER_SIZE]byte, 0, BUFFER_SIZE, 0, 0),
-        nil,
+        util.NewFixedByteBuffer(make([]byte, BUFFER_SIZE), 0, BUFFER_SIZE, 0, 0),
         uint32(0),
     }
 }
@@ -42,6 +40,7 @@ func isCommand (c byte) bool {
          'A' <= c && c <= 'Z':
         return true
     }
+    return false
 }
 
 //
@@ -66,34 +65,30 @@ func isWord (c byte) bool {
 // Make sure that a buffer can always provide.
 // Also, temporarily supress EOF when there are still
 // buffered bytes to process.
-func (lex *Parser) fillBuffer {
-    if lex.err != nil {
-        return
-    }
-
+func (lex *Parser) fillBuffer () error {
     lex.buf.Compact()
     if (lex.buf.Available() == 0) {
-        lex.err = util.ErrBufferOverflow
-        return
+        return util.ErrBufferOverflow
     }
 
     n, err := lex.buf.ReadFrom(lex.r)
     if err != nil && (err != io.EOF || n == 0) {
         // only propagate EOF errors if there are
         // no more buffered bytes left
-        lex.err = err
+        return err
     }
     lex.buf.Flip()
+    return nil
 }
 
 //
 // Read a byte from the buffer, and fill it if necessary.
-func (lex *Parser) readByte () byte {
-    for lex.buf.Available() == 0 && lex.err == nil {
-        lex.fillBuffer()
+func (lex *Parser) readByte () (byte, error) {
+    var err error
+    for ; lex.buf.Available() == 0 && err == nil; err = lex.fillBuffer() {
     }
-    if lex.err != nil {
-        return 0
+    if err != nil {
+        return 0, err
     }
     return lex.buf.ReadByte()
 }
@@ -103,92 +98,58 @@ func (lex *Parser) readByte () byte {
 // it marks the last read token.
 // Whitespace is ignored and the token is formulated
 // according to the given predicate for characters.
-func (lex *Parser) readWhile (pred func(byte)bool) {
-    if lex.err != nil {
-        return
-    }
-
+func (lex *Parser) readWhile (pred func(byte)bool) error {
     i := uint32(0)
-    c := lex.ReadByte()
-    for ; pred(c) && lex.err == nil; c = lex.ReadByte() {
-        ++i
+    c, err := lex.readByte()
+    for ; pred(c) && err == nil; c, err = lex.readByte() {
+        i++
+    }
+    if err == nil {
+        lex.buf.StepBack(1)
+        lex.length = i
+        return nil
     }
     // supress EOF "error" if bytes were read, it will reappear in the next call
-    if lex.err == nil {
-        lex.buf.StepBack(1)
-        lex.length = i - 1
-        return
-    }
-    if lex.err == io.EOF && i > 0
+    if err == io.EOF && i > 0 {
         lex.length = i
-        return
+        return nil
     }
     lex.buf.StepBack(i)
+    return err
 }
 
 //
-// Read a command token.
-func (lex *Parser) readCommand () {
-}
-
-//    for lex.err == nil && lex.buf.Available() < LONGEST_COMMAND {
-//        lex.fillBuffer()
-//    }
-//    if (lex.err != nil) {
-//        return nil, lex.err
-//    }
-//    i := uint(0)
-//    var c byte
-//    for (c, err := lex.buf.ReadByte(); err == nil && isCommand(c); c, err = lex.buf.ReadByte()) {
-//        ++i
-//    }
-//    if (!isCommand(c)) {
-//        lex.buf.StepBack(1)
-//    }
-//    return lex.buf.StringSnapshot(i), nil
-//}
-
-//
-// Read the next command from the input stream.
+// Read the next command token from the input stream.
 // This returns any lexical token which could be
 // a command according to the grammar.
-func (lex *Parser) readCommand (string, error) {
-    for lex.err == nil && lex.buf.Available() < LONGEST_COMMAND {
-        lex.fillBuffer()
-    }
-    if (lex.err != nil) {
-        return nil, lex.err
-    }
-    i := uint32(0)
-    var c byte
-    for (c, err := lex.buf.ReadByte(); err == nil && isCommand(c); c, err = lex.buf.ReadByte()) {
-        ++i
-    }
-    if (!isCommand(c)) {
-        lex.buf.StepBack(1)
-    }
-    return lex.buf.StringSnapshot(i), nil
+func (lex *Parser) readCommand () error {
+    return lex.readWhile(isCommand)
 }
 
+//
 // Read the next key from the input stream.
 // This returns any lexical token which could
 // be a key according to the grammer.
-
-//
-// Read the next 
-func (lex *Parser) NextToken () (lextoken.Token, error) {
-    if lex.err != nil {
-        return 0, lex.err
-    }
-
-    lex.fillBuffer()
-    if lex.err != nil {
-        lex.buf.Flip()
-        word, lex.err := lex.readWord()
-        if lex.err != nil {
-            return 0, lex.err
-        }
-        token, lex.err = parseWord(word)
-    }
+func (lex *Parser) readKey () error {
+    return lex.readWhile(isWord)
 }
 
+//
+// Return a slice view of the current
+// token read, in the buffer memory.
+func (lex *Parser) Token () []byte {
+    return lex.buf.Snapshot(lex.length)
+}
+
+//
+// Read the next token from the stream.
+// If no error is returned, the token's textual
+// value can be retrieved by calling Token().
+func (lex *Parser) NextToken () error {
+    lex.length = 0
+    err := lex.readCommand()
+    if err != nil {
+        return err
+    }
+    return nil
+}

@@ -13,8 +13,7 @@ ${dirs}:
 	mkdir -pv $@
 lol: \
      ${pkgdir}/command.o \
-     ${pkgdir}/parser/lextoken.o \
-     ${pkgdir}/parser.o \
+     ${pkgdir}/util.o \
      ${pkgdir}.o \
      ${pkgdir}_test.o
 	gccgo -o $@ $^

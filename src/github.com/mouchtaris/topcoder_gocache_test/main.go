@@ -3,7 +3,6 @@ package main
 import (
     gocache "github.com/mouchtaris/topcoder_gocache"
     "github.com/mouchtaris/topcoder_gocache/command"
-    "github.com/mouchtaris/topcoder_gocache/parser"
     "fmt"
     "strings"
 )
@@ -25,7 +24,8 @@ func main () {
     fmt.Println(command.Set { })
 
     r := strings.NewReader("set asok asadsadpd")
-    fmt.Println(parser.NextToken(r))
+    parser := gocache.NewParser(r)
+    fmt.Println(parser.NextToken())
 
     fmt.Println(byte("ad  d"[3]))
     fmt.Printf("%T\n", "sda")
