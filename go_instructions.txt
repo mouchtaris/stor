@@ -1,0 +1,6 @@
+GOMAXPROCS
+GOHOME
+https://golang.org/doc/effective_go.html
+http://golang.org/doc/code.html
+http://golang.org/doc/
+
