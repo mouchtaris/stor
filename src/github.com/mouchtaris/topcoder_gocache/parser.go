@@ -94,6 +94,19 @@ func (lex *Parser) readByte () (byte, error) {
 }
 
 //
+// Consumes all chars that are of no interest to anyone (like whitespace)
+// without keeping track of anything.
+func (lex *Parser) consumeSpace () error {
+    c, err := lex.readByte()
+    for ; !isWord(c) && err == nil; c, err = lex.readByte() {
+    }
+    if err == nil {
+        lex.buf.StepBack(1)
+    }
+    return err
+}
+
+//
 // Reads from the stream and marks the buffer so that
 // it marks the last read token.
 // Whitespace is ignored and the token is formulated
@@ -107,12 +120,12 @@ func (lex *Parser) readWhile (pred func(byte)bool) error {
     if err == nil {
         lex.buf.StepBack(1)
         lex.length = i
-        return nil
+        return lex.consumeSpace()
     }
     // supress EOF "error" if bytes were read, it will reappear in the next call
     if err == io.EOF && i > 0 {
         lex.length = i
-        return nil
+        return lex.consumeSpace()
     }
     lex.buf.StepBack(i)
     return err
