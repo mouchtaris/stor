@@ -25,7 +25,9 @@ func main () {
 
     r := strings.NewReader("set asok asadsadpd")
     parser := gocache.NewParser(r)
-    fmt.Println(parser.NextToken())
+    for tok, err := parser.NextToken(); err == nil; tok, err = parser.NextToken() {
+        fmt.Println(tok)
+    }
 
     fmt.Println(byte("ad  d"[3]))
     fmt.Printf("%T\n", "sda")

@@ -145,11 +145,18 @@ func (lex *Parser) Token () []byte {
 // Read the next token from the stream.
 // If no error is returned, the token's textual
 // value can be retrieved by calling Token().
-func (lex *Parser) NextToken () error {
+func (lex *Parser) Next () error {
     lex.length = 0
     err := lex.readCommand()
     if err != nil {
         return err
     }
     return nil
+}
+
+//
+// Next() and Token() together
+func (lex *Parser) NextToken() ([]byte, error) {
+    err := lex.Next()
+    return lex.Token(), err
 }
