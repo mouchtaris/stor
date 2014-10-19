@@ -2,6 +2,7 @@ package topcoder_gocache
 
 import (
     "github.com/mouchtaris/topcoder_gocache/cache"
+    "fmt"
 )
 
 type Dispatcher struct {
@@ -33,6 +34,8 @@ func (disp *Dispatcher) DispatchAll (cach *cache.Cache) error {
         err := req.Command.PerformOn(cach, writeBack)
 
         if err != nil {
+            errmsg := fmt.Sprintf("ERROR %s\r\n", err)
+            writeBack(errmsg)
             disp.errors <- err
             req.Close()
         }

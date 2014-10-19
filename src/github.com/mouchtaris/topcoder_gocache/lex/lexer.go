@@ -15,7 +15,7 @@ const MAX_COMMAND_SIZE = LONGEST_COMMAND
 const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
 
 var ErrInputTooLarge = errors.New("input too large")
-var ErrLexing = errors.New("lexing error")
+var ErrLexing = errors.New("lexing error: expected \\r\\n")
 
 // TODO remove
 func log (format string, args ... interface { }) {

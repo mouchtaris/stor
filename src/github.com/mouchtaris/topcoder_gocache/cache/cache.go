@@ -1,8 +1,10 @@
 package cache
 
 import (
-    "math"
+    "errors"
 )
+
+var ErrFull = errors.New("the cache is full")
 
 // A Cache models the server's back-end.
 //
@@ -12,6 +14,7 @@ import (
 type Cache struct {
     entries map[string] string
     stats Stats
+    limit uint32
 }
 
 type Stats struct {
@@ -28,9 +31,10 @@ func (db *Cache) untrackedGet (key string) (item string, present bool) {
 
 //
 // Construct and initialise a Cache.
-func NewCache () *Cache {
+func NewCache (limit uint32) *Cache {
     return &Cache {
         entries: map[string] string { },
+        limit: limit,
     }
 }
 
@@ -38,15 +42,21 @@ func NewCache () *Cache {
 // Returns the current statistics for this cache.
 func (db *Cache) Stats () Stats {
     db.stats.CurrentItems = uint32(len(db.entries))
-    db.stats.Limit = math.MaxUint16
+    db.stats.Limit = db.limit
     return db.stats
 }
 
 //
 // Set a value in the cache. Also update relative statistics.
-func (db *Cache) Set (key, data string) {
+// If this would exceed db.Stats().Limit elements, then
+// no change is made in the cache and ErrFull is returned.
+func (db *Cache) Set (key, data string) error {
+    if uint32(len(db.entries)) == db.limit {
+        return ErrFull
+    }
     db.stats.Sets++;
     db.entries[key] = data
+    return nil
 }
 
 //
@@ -73,5 +83,6 @@ func (db *Cache) Delete (key string) (deletedItem string, present bool){
     } else {
         db.stats.DeleteMisses++
     }
+    delete(db.entries, key)
     return
 }

@@ -12,7 +12,10 @@ type Set struct {
 
 //
 func (comm *Set) PerformOn (cache *cache.Cache, w WriteBack) error {
-    cache.Set(comm.Key, comm.Data)
+    err := cache.Set(comm.Key, comm.Data)
+    if err != nil {
+        return err
+    }
     w("STORED\r\n")
     return nil
 }

@@ -45,7 +45,7 @@ func dispatchAll (disp *gocache.Dispatcher, cache *cache.Cache, errors chan<- er
 
 func main () {
     errors := make(chan error, 1)
-    cache := cache.NewCache()
+    cache := cache.NewCache(1)
     dispatcher := gocache.NewDispatcher(1, errors)
     server := gocache.NewServer(20, dispatcher.RequestSink(), errors)
     listener := newListener("0.0.0.0:11000")
