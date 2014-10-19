@@ -3,12 +3,17 @@ package topcoder_gocache
 import (
     "github.com/mouchtaris/topcoder_gocache/util"
     "io"
+    Log "log"
 )
 
 const MAX_KEY_SIZE    = 250
 const MAX_VALUE_SIZE  = 8 << 10 // 8KiB
 const LONGEST_COMMAND = 6 // for "delete"
 const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
+
+func log (fmt string, args ... interface { }) {
+    Log.Printf(fmt, args...)
+}
 
 //
 // The parser is responsible for parsing raw input
@@ -68,11 +73,14 @@ func isWord (c byte) bool {
 // the buffer, the token being curretly read has to be
 // saved from oblivion.
 func (lex *Parser) compact () {
+    log("compacting: %s", lex.buf.Stats())
     if lex.length > 0 {
+        log("stepbacking length bytes")
         // We're in the middle of parsing a token.
         lex.buf.StepBack(lex.length)
     }
     lex.buf.Compact()
+    log("compacted: %s", lex.buf.Stats())
 }
 
 //
@@ -80,6 +88,7 @@ func (lex *Parser) compact () {
 // Also, temporarily supress EOF when there are still
 // buffered bytes to process.
 func (lex *Parser) fillBuffer () error {
+    log("filling buffer")
     lex.compact()
     if (lex.buf.Available() == 0) {
         return util.ErrBufferOverflow
@@ -87,9 +96,12 @@ func (lex *Parser) fillBuffer () error {
 
     n, err := lex.buf.ReadFrom(lex.r)
     if err == nil || err == io.EOF {
+        log("filled: %s", lex.buf.Stats())
         // bring back to "length" bytes read for current token
         lex.buf.Flip()
+        log("flipped: %s", lex.buf.Stats())
         lex.buf.Read(make([]byte, lex.length))
+        log("read(step forward): %s", lex.buf.Stats())
     }
     if err != nil && (err != io.EOF || n == 0) {
         // only propagate EOF errors if there are
@@ -102,6 +114,7 @@ func (lex *Parser) fillBuffer () error {
 //
 // Read a byte from the buffer, and fill it if necessary.
 func (lex *Parser) readByte () (byte, error) {
+    log("reading byte")
     var err error
     for ; lex.buf.Available() == 0 && err == nil; err = lex.fillBuffer() {
     }
@@ -116,11 +129,13 @@ func (lex *Parser) readByte () (byte, error) {
 // Unread the last read byte, so that it becomes available for
 // reading again.
 func (lex *Parser) unreadByte (n uint32) error {
+    log("unreading %d bytes...", n)
     err := lex.buf.StepBack(n)
     if err != nil {
         return err
     }
     lex.length -= n
+    log("length=%d", lex.length)
     return nil
 }
 
@@ -128,12 +143,14 @@ func (lex *Parser) unreadByte (n uint32) error {
 // Consumes all chars that are of no interest to anyone (like whitespace)
 // without keeping track of anything.
 func (lex *Parser) consumeSpace () error {
+    log("consuming space, length=%d", lex.length)
     c, err := lex.readByte()
     for ; !isWord(c) && err == nil; c, err = lex.readByte() {
     }
     if err == nil {
         err = lex.unreadByte(1)
     }
+    log("space consumed, length (before setting to 0) =%d", lex.length)
     lex.length = 0
     return err
 }

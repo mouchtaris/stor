@@ -152,3 +152,10 @@ func (buf *FixedByteBuffer) Clear () {
 func (buf *FixedByteBuffer) Available () uint32 {
     return buf.limit - buf.pos
 }
+
+type StatsVal struct { pos, limit uint32 }
+//
+// Return readable internal stats.
+func (buf *FixedByteBuffer) Stats () StatsVal {
+    return StatsVal { buf.pos, buf.limit }
+}
