@@ -1,7 +1,7 @@
-package topcoder_gocache
+package scs
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/command"
+    "topcoder.com/mouchtaris/scs/command"
 )
 
 // A request object, created by the server,

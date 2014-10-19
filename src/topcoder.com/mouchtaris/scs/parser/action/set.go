@@ -1,8 +1,8 @@
 package action
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/lex"
-    "github.com/mouchtaris/topcoder_gocache/command"
+    "topcoder.com/mouchtaris/scs/lex"
+    "topcoder.com/mouchtaris/scs/command"
 )
 
 //

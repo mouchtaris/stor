@@ -1,7 +1,7 @@
 package command
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/cache"
+    "topcoder.com/mouchtaris/scs/cache"
     "errors"
 )
 

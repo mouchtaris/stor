@@ -1,9 +1,9 @@
 package parser
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/parser/action"
-    "github.com/mouchtaris/topcoder_gocache/lex"
-    "github.com/mouchtaris/topcoder_gocache/command"
+    "topcoder.com/mouchtaris/scs/parser/action"
+    "topcoder.com/mouchtaris/scs/lex"
+    "topcoder.com/mouchtaris/scs/command"
     "errors"
 )
 

@@ -25,7 +25,7 @@ lol: \
      ${pkgdir}_test.o
 	gccgo -o $@ $^
 go:
-	go install github.com/mouchtaris/topcoder_gocache_test
+	go install topcoder.com/mouchtaris/scs/main
 
 _build/topcoder_gocache_test.o: _build/topcoder_gocache.o
 

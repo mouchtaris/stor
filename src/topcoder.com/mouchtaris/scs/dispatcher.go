@@ -1,7 +1,7 @@
-package topcoder_gocache
+package scs
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/cache"
+    "topcoder.com/mouchtaris/scs/cache"
     "fmt"
 )
 

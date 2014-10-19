@@ -1,8 +1,8 @@
 package main
 
 import (
-    gocache "github.com/mouchtaris/topcoder_gocache"
-    "github.com/mouchtaris/topcoder_gocache/cache"
+    "topcoder.com/mouchtaris/scs"
+    "topcoder.com/mouchtaris/scs/cache"
     "fmt"
     "net"
     "os"
@@ -16,7 +16,7 @@ func errorHandler (errors <-chan error) {
     }
 }
 
-func serveNext (s *gocache.Server, l net.Listener, errors chan<- error) {
+func serveNext (s *scs.Server, l net.Listener, errors chan<- error) {
     conn, err := l.Accept()
     if err != nil {
         errors <- err
@@ -25,7 +25,7 @@ func serveNext (s *gocache.Server, l net.Listener, errors chan<- error) {
     s.GoServe(conn)
 }
 
-func serveIncoming (s* gocache.Server, l net.Listener, stop <-chan uint32, errors chan<- error) {
+func serveIncoming (s* scs.Server, l net.Listener, stop <-chan uint32, errors chan<- error) {
     for {
         select {
         case <-stop:
@@ -44,7 +44,7 @@ func newListener (laddr string) net.Listener {
     return l
 }
 
-func dispatchAll (disp *gocache.Dispatcher, cache *cache.Cache, errors chan<- error) {
+func dispatchAll (disp *scs.Dispatcher, cache *cache.Cache, errors chan<- error) {
     err := disp.DispatchAll(cache)
     if err != nil {
         errors <- err
@@ -66,8 +66,8 @@ func main () {
 
     errors := make(chan error, 1)
     cache := cache.NewCache(uint32(limit))
-    dispatcher := gocache.NewDispatcher(1, errors)
-    server := gocache.NewServer(20, dispatcher.RequestSink(), errors)
+    dispatcher := scs.NewDispatcher(1, errors)
+    server := scs.NewServer(20, dispatcher.RequestSink(), errors)
     listener := newListener(fmt.Sprintf("0.0.0.0:%d", port))
     joiner := make(chan uint32, 1)
     stop := make(chan uint32, 1)

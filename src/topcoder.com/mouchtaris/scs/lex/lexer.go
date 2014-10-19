@@ -1,7 +1,7 @@
 package lex
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/util"
+    "topcoder.com/mouchtaris/scs/util"
     "io"
     "fmt"
     "errors"
