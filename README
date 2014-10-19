@@ -39,6 +39,10 @@ errors are reported
     startup)
     ERROR the cache is full
 
+It is worth noting that while parsing errors are fatal, runtime
+errors are fully recoverable and do not corrupt the system or
+terminate the connection violently.
+
 A basic testing script with the examples provided on the topcoder.com
 description is provided. In addition, another test script which demonstrates
 errors and error reporting is provided.
@@ -46,7 +50,7 @@ errors and error reporting is provided.
   test/simple.txt
   test/error*.txt
 
-After each error, the connection is terminated, and therefore all error
+After parsing errors, the connection is terminated, and therefore all error
 testing cases are provided in separate files.
   error00: key too large
   error01: data too large

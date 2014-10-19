@@ -9,5 +9,4 @@ import (
 type Request struct {
     Command command.Command
     Write func (p []byte) (int, error)
-    Close func () error
 }
