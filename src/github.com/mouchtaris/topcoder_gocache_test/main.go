@@ -19,14 +19,23 @@ func main () {
     var _ io.Reader = os.Stdin
 
     setConsumer := make(chan command.Set, 20)
+    getConsumer := make(chan command.Get, 20)
     errors := make(chan error, 20)
     joiner := make(chan uint32, 20)
     go func () {
         defer func() { joiner <- 1 }()
-
         for setcomm := range setConsumer {
             fmt.Printf("set: %s\n", setcomm)
         }
+    }()
+    go func () {
+        defer func() { joiner <- 1 }()
+        for getcomm := range getConsumer {
+            fmt.Printf("get: %s\n", getcomm)
+        }
+    }()
+    go func () {
+        defer func() { joiner <- 1 }()
         for err := range errors {
             fmt.Printf("error: %s\n", err)
         }
@@ -35,14 +44,16 @@ func main () {
     lexer := lex.NewLexer(r)
     parser := parser.NewParser(lexer)
     parser.RegisterHandler(action.NewSet(setConsumer))
+    parser.RegisterHandler(action.NewGet(getConsumer))
     err := parser.Parse()
     for ; err == nil; err = parser.Parse() {
     }
 
     errors <- err
     close(setConsumer)
+    close(getConsumer)
     close(errors)
-    for i := 0; i < 1; i++ {
+    for i := 0; i < 3; i++ {
         <-joiner
     }
 }

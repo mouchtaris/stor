@@ -22,7 +22,7 @@ func (*Set) Name () string {
 }
 
 //
-func (comm *Set) Parse (lex *lex.Lexer) error {
+func (action *Set) Parse (lex *lex.Lexer) error {
     err := lex.ReadKey()
     if err != nil {
         return err
@@ -45,6 +45,6 @@ func (comm *Set) Parse (lex *lex.Lexer) error {
         return err
     }
 
-    comm.consumer <- command.Set { Key: key, Data: val }
+    action.consumer <- command.Set { Key: key, Data: val }
     return nil
 }

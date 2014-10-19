@@ -16,7 +16,7 @@ type Delete struct {
 // A "get" command.
 type Get struct {
     Command
-    keys []string
+    Keys []string
 }
 
 //
