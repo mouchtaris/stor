@@ -12,7 +12,7 @@ dirs = \
 all: gcc go
 gcc: ${dirs} scs
 clean:
-	rm -rvf _build pkg bin lol
+	rm -rvf _build pkg bin scs
 ${dirs}:
 	mkdir -pv $@
 scs: \
