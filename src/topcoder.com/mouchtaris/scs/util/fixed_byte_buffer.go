@@ -1,19 +1,19 @@
 package util
 
 import (
-    "errors"
-    "io"
-    "fmt"
+	"errors"
+	"fmt"
+	"io"
 )
 
 var ErrBufferUnderflow = errors.New("buffer underflow")
 var ErrBufferOverflow = errors.New("buffer overflow")
 
-func Min (a, b uint32) uint32 {
-    if (a < b) {
-        return a
-    }
-    return b
+func Min(a, b uint32) uint32 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 //
@@ -31,44 +31,44 @@ func Min (a, b uint32) uint32 {
 //
 
 type FixedByteBuffer struct {
-    mem []byte
-    pos, limit uint32
+	mem        []byte
+	pos, limit uint32
 }
 
-func NewFixedByteBuffer (mem []byte, start, end, pos, limit uint32) *FixedByteBuffer {
-    return &FixedByteBuffer { mem[start:end], pos, limit }
+func NewFixedByteBuffer(mem []byte, start, end, pos, limit uint32) *FixedByteBuffer {
+	return &FixedByteBuffer{mem[start:end], pos, limit}
 }
 
-func NewFixedByteBufferSimple (mem []byte) *FixedByteBuffer {
-    return NewFixedByteBuffer(mem, 0, uint32(len(mem)), 0, uint32(len(mem)))
+func NewFixedByteBufferSimple(mem []byte) *FixedByteBuffer {
+	return NewFixedByteBuffer(mem, 0, uint32(len(mem)), 0, uint32(len(mem)))
 }
 
 //
 // freeBytes() returns a slice view which includes only
 // the available space of the buffer, ie, buf[pos:limit].
-func (buf *FixedByteBuffer) freeBytes () []byte {
-    return buf.mem[buf.pos:buf.limit]
+func (buf *FixedByteBuffer) freeBytes() []byte {
+	return buf.mem[buf.pos:buf.limit]
 }
 
 //
 // Copies bytes from the Reader stream into the underlying buffer.
 // Returns the number of bytes actually written and any error
 // the reader provides after reading.
-func (buf *FixedByteBuffer) ReadFrom (r io.Reader) (bytesWritten int, err error) {
-    bytesWritten, err = r.Read(buf.freeBytes())
-    if (bytesWritten > 0) {
-        buf.pos += uint32(bytesWritten)
-    }
-    return
+func (buf *FixedByteBuffer) ReadFrom(r io.Reader) (bytesWritten int, err error) {
+	bytesWritten, err = r.Read(buf.freeBytes())
+	if bytesWritten > 0 {
+		buf.pos += uint32(bytesWritten)
+	}
+	return
 }
 
 //
 // Read a single byte. Returns io.EOF error if no more
 // bytes are available.
-func (buf *FixedByteBuffer) ReadByte () (byte, error) {
-    b := [1]byte { }
-    _, err := buf.Read(b[:])
-    return b[0], err
+func (buf *FixedByteBuffer) ReadByte() (byte, error) {
+	b := [1]byte{}
+	_, err := buf.Read(b[:])
+	return b[0], err
 }
 
 //
@@ -77,15 +77,15 @@ func (buf *FixedByteBuffer) ReadByte () (byte, error) {
 // slice.
 // If there are no more bytes left in this buffer,
 // then io.EOF is returned as an error.
-func (buf *FixedByteBuffer) Read (p []byte) (int, error) {
-    available := buf.Available()
-    if available == 0 {
-        return 0, io.EOF
-    }
-    numbytes := Min(available, uint32(len(p)))
-    copy(p, buf.freeBytes())
-    buf.pos += numbytes
-    return int(numbytes), nil
+func (buf *FixedByteBuffer) Read(p []byte) (int, error) {
+	available := buf.Available()
+	if available == 0 {
+		return 0, io.EOF
+	}
+	numbytes := Min(available, uint32(len(p)))
+	copy(p, buf.freeBytes())
+	buf.pos += numbytes
+	return int(numbytes), nil
 }
 
 //
@@ -95,23 +95,23 @@ func (buf *FixedByteBuffer) Read (p []byte) (int, error) {
 // n previous times it was called.
 // If there is no room to step back, this method returns
 // ErrBufferOverflow as an error.
-func (buf *FixedByteBuffer) StepBack (n uint32) error {
-    if buf.pos < n {
-        return ErrBufferOverflow
-    }
-    buf.pos -= n
-    return nil
+func (buf *FixedByteBuffer) StepBack(n uint32) error {
+	if buf.pos < n {
+		return ErrBufferOverflow
+	}
+	buf.pos -= n
+	return nil
 }
 
 //
 // Return a view into the memory buffer which includes bytes
 // [pos - n, pos). If n is larger than the current position,
 // then this is considered a buffer underflow error.
-func (buf *FixedByteBuffer) Snapshot (n uint32) ([]byte, error) {
-    if n > buf.pos {
-        return nil, ErrBufferUnderflow
-    }
-    return buf.mem[buf.pos - n : buf.pos], nil
+func (buf *FixedByteBuffer) Snapshot(n uint32) ([]byte, error) {
+	if n > buf.pos {
+		return nil, ErrBufferUnderflow
+	}
+	return buf.mem[buf.pos-n : buf.pos], nil
 }
 
 //
@@ -119,50 +119,54 @@ func (buf *FixedByteBuffer) Snapshot (n uint32) ([]byte, error) {
 // of the buffer, so that all free space is continuous.
 // Also, mark available space as consumed and unavailable
 // space as available (resume previous operation).
-func (buf *FixedByteBuffer) Compact () {
-    if buf.pos > 0 {
-        copy(buf.mem, buf.mem[buf.pos:buf.limit])
-    }
-    buf.pos = buf.limit - buf.pos
-    buf.limit = uint32(len(buf.mem))
+func (buf *FixedByteBuffer) Compact() {
+	if buf.pos > 0 {
+		copy(buf.mem, buf.mem[buf.pos:buf.limit])
+	}
+	buf.pos = buf.limit - buf.pos
+	buf.limit = uint32(len(buf.mem))
 }
 
 //
 // Mark used space as available, so that after a write
 // written bytes become available for reading.
-func (buf *FixedByteBuffer) Flip () {
-    buf.limit = buf.pos
-    buf.pos = 0
+func (buf *FixedByteBuffer) Flip() {
+	buf.limit = buf.pos
+	buf.pos = 0
 }
 
 //
 // Reset to the initial state (the whole space becomes
 // available).
-func (buf *FixedByteBuffer) Clear () {
-    buf.pos = 0
-    buf.limit = uint32(len(buf.mem))
+func (buf *FixedByteBuffer) Clear() {
+	buf.pos = 0
+	buf.limit = uint32(len(buf.mem))
 }
 
 //
 // Return the number of available bytes (for reading
 // or writing).
-func (buf *FixedByteBuffer) Available () uint32 {
-    return buf.limit - buf.pos
+func (buf *FixedByteBuffer) Available() uint32 {
+	return buf.limit - buf.pos
 }
 
-type StatsVal struct { pos, limit uint32; freeMem string }
+type StatsVal struct {
+	pos, limit uint32
+	freeMem    string
+}
+
 //
 // Return readable internal stats.
-func (buf *FixedByteBuffer) Stats () StatsVal {
-    var strval string
-    if (buf.pos <= buf.limit) {
-        strval = string(buf.mem[0:14])
-    } else {
-        strval = fmt.Sprintf("<INVALID>{pos:%d,lim:%d}", buf.pos, buf.limit)
-    }
-    return StatsVal { buf.pos, buf.limit, strval }
+func (buf *FixedByteBuffer) Stats() StatsVal {
+	var strval string
+	if buf.pos <= buf.limit {
+		strval = string(buf.mem[0:14])
+	} else {
+		strval = fmt.Sprintf("<INVALID>{pos:%d,lim:%d}", buf.pos, buf.limit)
+	}
+	return StatsVal{buf.pos, buf.limit, strval}
 }
 
-func (s StatsVal) String () string {
-    return fmt.Sprintf("{pos=%d, lim=%d, \"%s\"}", s.pos, s.limit, s.freeMem)
+func (s StatsVal) String() string {
+	return fmt.Sprintf("{pos=%d, lim=%d, \"%s\"}", s.pos, s.limit, s.freeMem)
 }

@@ -1,13 +1,13 @@
 package scs
 
 import (
-    "topcoder.com/mouchtaris/scs/cache"
-    "fmt"
+	"fmt"
+	"topcoder.com/mouchtaris/scs/cache"
 )
 
 type Dispatcher struct {
-    requests chan Request
-    errors chan<- error
+	requests chan Request
+	errors   chan<- error
 }
 
 //
@@ -15,34 +15,34 @@ type Dispatcher struct {
 // the given error reporting stream.
 // The backlog is the ammount of commands that can be
 // buffered and wait for execution.
-func NewDispatcher (backlog uint32, errors chan<- error) *Dispatcher {
-    return &Dispatcher {
-        requests: make(chan Request, backlog),
-        errors: errors,
-    }
+func NewDispatcher(backlog uint32, errors chan<- error) *Dispatcher {
+	return &Dispatcher{
+		requests: make(chan Request, backlog),
+		errors:   errors,
+	}
 }
 
 //
 // Fetch commands from the CommandsChannel and perform them one
 // by one.
-func (disp *Dispatcher) DispatchAll (cach *cache.Cache) error {
-    for req := range disp.requests {
-        writeBack := func (s string) error {
-            _, err := req.Write([]byte(s))
-            return err
-        }
-        err := req.Command.PerformOn(cach, writeBack)
+func (disp *Dispatcher) DispatchAll(cach *cache.Cache) error {
+	for req := range disp.requests {
+		writeBack := func(s string) error {
+			_, err := req.Write([]byte(s))
+			return err
+		}
+		err := req.Command.PerformOn(cach, writeBack)
 
-        if err != nil {
-            errmsg := fmt.Sprintf("ERROR %s\r\n", err)
-            writeBack(errmsg)
-            disp.errors <- err
-            req.Close()
-        }
-    }
-    return nil
+		if err != nil {
+			errmsg := fmt.Sprintf("ERROR %s\r\n", err)
+			writeBack(errmsg)
+			disp.errors <- err
+			req.Close()
+		}
+	}
+	return nil
 }
 
-func (disp *Dispatcher) RequestSink () chan<- Request {
-    return disp.requests
+func (disp *Dispatcher) RequestSink() chan<- Request {
+	return disp.requests
 }
