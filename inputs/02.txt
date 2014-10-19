@@ -1,0 +1,4 @@
+delete box
+get bob hello hi
+quit
+

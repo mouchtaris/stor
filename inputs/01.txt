@@ -1,0 +1,5 @@
+set bob
+the big black bob with the big blag cog
+stats
+quit
+

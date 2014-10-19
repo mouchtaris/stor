@@ -1,0 +1,9 @@
+set hello
+you
+set hi
+me
+get hello hi
+delete hi
+stats
+quit
+
