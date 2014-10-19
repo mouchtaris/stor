@@ -5,6 +5,7 @@ import (
     "github.com/mouchtaris/topcoder_gocache/parser/action"
     "github.com/mouchtaris/topcoder_gocache/parser"
     "io"
+    "fmt"
 )
 
 type Server struct {
@@ -47,6 +48,11 @@ func serve (requests chan<- Request, input io.ReadWriteCloser) error {
         requests <- Request { comm, input.Write, input.Close, }
     }
 
+    if err != nil && err != action.ErrQuit {
+        errmsg := fmt.Sprintf("ERROR %s\r\n", err)
+        input.Write([]byte(errmsg))
+    }
+    input.Close()
     return err
 }
 
