@@ -3,7 +3,7 @@ package topcoder_gocache
 import (
     "github.com/mouchtaris/topcoder_gocache/util"
     "io"
-    Log "log"
+    "fmt"
 )
 
 const MAX_KEY_SIZE    = 250
@@ -11,8 +11,10 @@ const MAX_VALUE_SIZE  = 8 << 10 // 8KiB
 const LONGEST_COMMAND = 6 // for "delete"
 const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
 
-func log (fmt string, args ... interface { }) {
-    Log.Printf(fmt, args...)
+func log (format string, args ... interface { }) {
+    var _ = fmt.Println
+//  fmt.Printf(format, args...)
+//  fmt.Println()
 }
 
 //
@@ -75,9 +77,10 @@ func isWord (c byte) bool {
 func (lex *Parser) compact () {
     log("compacting: %s", lex.buf.Stats())
     if lex.length > 0 {
-        log("stepbacking length bytes")
+        log("stepbacking length(%d) bytes", lex.length)
         // We're in the middle of parsing a token.
         lex.buf.StepBack(lex.length)
+        log("%s", lex.buf.Stats())
     }
     lex.buf.Compact()
     log("compacted: %s", lex.buf.Stats())
@@ -129,7 +132,7 @@ func (lex *Parser) readByte () (byte, error) {
 // Unread the last read byte, so that it becomes available for
 // reading again.
 func (lex *Parser) unreadByte (n uint32) error {
-    log("unreading %d bytes...", n)
+    log("unreading %d bytes... %s", n, lex.buf.Stats())
     err := lex.buf.StepBack(n)
     if err != nil {
         return err
@@ -143,14 +146,14 @@ func (lex *Parser) unreadByte (n uint32) error {
 // Consumes all chars that are of no interest to anyone (like whitespace)
 // without keeping track of anything.
 func (lex *Parser) consumeSpace () error {
-    log("consuming space, length=%d", lex.length)
+    log("consuming space, length=%d %s", lex.length, lex.buf.Stats())
     c, err := lex.readByte()
     for ; !isWord(c) && err == nil; c, err = lex.readByte() {
     }
     if err == nil {
         err = lex.unreadByte(1)
     }
-    log("space consumed, length (before setting to 0) =%d", lex.length)
+    log("space consumed, length (before setting to 0) =%d %s", lex.length, lex.buf.Stats())
     lex.length = 0
     return err
 }
@@ -202,7 +205,11 @@ func (lex *Parser) readKey () error {
 // Return a slice view of the current
 // token read, in the buffer memory.
 func (lex *Parser) Token () []byte {
-    return lex.buf.Snapshot(lex.length)
+    tok, err := lex.buf.Snapshot(lex.length)
+    if err != nil {
+        return nil
+    }
+    return tok
 }
 
 //

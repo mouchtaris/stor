@@ -105,16 +105,13 @@ func (buf *FixedByteBuffer) StepBack (n uint32) error {
 
 //
 // Return a view into the memory buffer which includes bytes
-// [pos - n, pos). If n is too crazy, the underlying
-// memory slice will panic.
-func (buf *FixedByteBuffer) Snapshot (n uint32) []byte {
+// [pos - n, pos). If n is larger than the current position,
+// then this is considered a buffer underflow error.
+func (buf *FixedByteBuffer) Snapshot (n uint32) ([]byte, error) {
     if n > buf.pos {
-        panic(fmt.Sprintf("AASDASDASD pos(%d), lim(%d), n(%d)", buf.pos, buf.limit, n))
+        return nil, ErrBufferUnderflow
     }
-    if buf.pos - n > buf.limit {
-        panic(fmt.Sprintf("OOOOOOOO pos(%d), lim(%d), n(%d)", buf.pos, buf.limit, n))
-    }
-    return buf.mem[buf.pos - n : buf.pos]
+    return buf.mem[buf.pos - n : buf.pos], nil
 }
 
 //
@@ -124,7 +121,7 @@ func (buf *FixedByteBuffer) Snapshot (n uint32) []byte {
 // space as available (resume previous operation).
 func (buf *FixedByteBuffer) Compact () {
     if buf.pos > 0 {
-        copy(buf.mem[buf.pos:buf.limit], buf.mem)
+        copy(buf.mem, buf.mem[buf.pos:buf.limit])
     }
     buf.pos = buf.limit - buf.pos
     buf.limit = uint32(len(buf.mem))
@@ -153,9 +150,19 @@ func (buf *FixedByteBuffer) Available () uint32 {
     return buf.limit - buf.pos
 }
 
-type StatsVal struct { pos, limit uint32 }
+type StatsVal struct { pos, limit uint32; freeMem string }
 //
 // Return readable internal stats.
 func (buf *FixedByteBuffer) Stats () StatsVal {
-    return StatsVal { buf.pos, buf.limit }
+    var strval string
+    if (buf.pos <= buf.limit) {
+        strval = string(buf.mem[0:14])
+    } else {
+        strval = fmt.Sprintf("<INVALID>{pos:%d,lim:%d}", buf.pos, buf.limit)
+    }
+    return StatsVal { buf.pos, buf.limit, strval }
+}
+
+func (s StatsVal) String () string {
+    return fmt.Sprintf("{pos=%d, lim=%d, \"%s\"}", s.pos, s.limit, s.freeMem)
 }
