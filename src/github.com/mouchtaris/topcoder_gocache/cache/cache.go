@@ -1,4 +1,4 @@
-package topcoder_gocache
+package cache
 
 // A Cache models the server's back-end.
 //

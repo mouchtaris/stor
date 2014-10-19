@@ -3,9 +3,10 @@ _build/github.com/mouchtaris/%.o: src/github.com/mouchtaris/%/*.go
 
 pkgdir = _build/github.com/mouchtaris/topcoder_gocache
 dirs = \
+	${pkgdir}/cache \
 	${pkgdir}/parser \
 	${pkgdir}/parser/action \
-	${pkgdir}/parser/lex
+	${pkgdir}/parser/lex \
 
 all: gcc go
 gcc: ${dirs} lol
@@ -15,6 +16,7 @@ ${dirs}:
 	mkdir -pv $@
 lol: \
      ${pkgdir}/util.o \
+     ${pkgdir}/cache.o \
      ${pkgdir}/command.o \
      ${pkgdir}/parser/lex.o \
      ${pkgdir}/parser/action.o \
