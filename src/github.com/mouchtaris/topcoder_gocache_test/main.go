@@ -10,9 +10,9 @@ func main () {
     r := strings.NewReader("set asok asda")
     parser := gocache.NewParser(r)
     pn := func () error {
-        tok, err := parser.NextToken()
+        err := parser.ReadCommand()
         if err == nil {
-            fmt.Println("toen: ", string(tok))
+            fmt.Println("toen: ", string(parser.Token()))
         } else {
             fmt.Println("error: ", err)
         }
