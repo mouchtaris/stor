@@ -7,6 +7,7 @@ import (
     "net"
     "os"
     "os/signal"
+    "flag"
 )
 
 func errorHandler (errors <-chan error) {
@@ -57,11 +58,17 @@ func handleInterrupt (interruption <-chan os.Signal, joiner chan<- uint32) {
 }
 
 func main () {
+    limit := uint(0)
+    port := uint(0)
+    flag.UintVar(&limit, "items", 65535, "specify the maximum number of entries allows in the cache")
+    flag.UintVar(&port, "port", 11212, "specify the tcp port to listen to")
+    flag.Parse()
+
     errors := make(chan error, 1)
-    cache := cache.NewCache(1)
+    cache := cache.NewCache(uint32(limit))
     dispatcher := gocache.NewDispatcher(1, errors)
     server := gocache.NewServer(20, dispatcher.RequestSink(), errors)
-    listener := newListener("0.0.0.0:11000")
+    listener := newListener(fmt.Sprintf("0.0.0.0:%d", port))
     joiner := make(chan uint32, 1)
     stop := make(chan uint32, 1)
     interruption := make(chan os.Signal, 10)
