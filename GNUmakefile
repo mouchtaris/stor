@@ -8,7 +8,7 @@ dirs = \
 all: gcc go
 gcc: ${dirs} lol
 clean:
-	rm -rvf _build pkg bin
+	rm -rvf _build pkg bin lol
 ${dirs}:
 	mkdir -pv $@
 lol: \
