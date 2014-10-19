@@ -7,10 +7,10 @@ import (
 
 //
 type Quit struct {
-    consumer chan<- command.Quit
+    consumer chan<- command.Command
 }
 
-func NewQuit (consumer chan<- command.Quit) *Quit {
+func NewQuit (consumer chan<- command.Command) *Quit {
     return &Quit {
         consumer: consumer,
     }
@@ -30,6 +30,6 @@ func (action *Quit) Parse (lex *lex.Lexer) error {
         return err
     }
 
-    action.consumer <- comm
+    action.consumer <- &comm
     return nil
 }

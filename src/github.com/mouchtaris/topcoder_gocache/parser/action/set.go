@@ -7,10 +7,10 @@ import (
 
 //
 type Set struct {
-    consumer chan<- command.Set
+    consumer chan<- command.Command
 }
 
-func NewSet (consumer chan<- command.Set) *Set {
+func NewSet (consumer chan<- command.Command) *Set {
     return &Set {
         consumer: consumer,
     }
@@ -47,6 +47,6 @@ func (action *Set) Parse (lex *lex.Lexer) error {
         return err
     }
 
-    action.consumer <- comm
+    action.consumer <- &comm
     return nil
 }

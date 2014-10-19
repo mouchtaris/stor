@@ -7,10 +7,10 @@ import (
 
 //
 type Delete struct {
-    consumer chan<- command.Delete
+    consumer chan<- command.Command
 }
 
-func NewDelete (consumer chan<- command.Delete) *Delete {
+func NewDelete (consumer chan<- command.Command) *Delete {
     return &Delete {
         consumer: consumer,
     }
@@ -23,7 +23,7 @@ func (*Delete) Name () string {
 
 //
 func (action *Delete) Parse (lex *lex.Lexer) error {
-    comm := command.Delete { }
+    comm := command.Delete{ }
 
     err := lex.ReadKey()
     if err != nil {
@@ -36,6 +36,6 @@ func (action *Delete) Parse (lex *lex.Lexer) error {
         return err
     }
 
-    action.consumer <- comm
+    action.consumer <- &comm
     return nil
 }

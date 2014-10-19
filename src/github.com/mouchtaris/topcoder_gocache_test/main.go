@@ -6,11 +6,26 @@ import (
     "github.com/mouchtaris/topcoder_gocache/parser/action"
     "github.com/mouchtaris/topcoder_gocache/parser/lex"
     "github.com/mouchtaris/topcoder_gocache/command"
+    "github.com/mouchtaris/topcoder_gocache/cache"
     "fmt"
     "strings"
     "os"
     "io"
 )
+
+func open (fname string) io.Reader {
+    r, err := os.Open(fname)
+    if err != nil {
+        return nil
+    }
+    return r
+}
+
+var Inputs = []io.Reader {
+    open("inputs/00.txt"),
+    open("inputs/01.txt"),
+    open("inputs/02.txt"),
+}
 
 func main () {
     r := strings.NewReader("set hello\r\nyou\r\nset hi\r\nme\r\nget hello hi\r\ndelete hi\r\n" +
@@ -18,42 +33,15 @@ func main () {
     var _ *lex.Lexer = lex.NewLexer(r)
     var _ gocache.Server
     var _ io.Reader = os.Stdin
+    cache := cache.NewCache()
 
-    setConsumer := make(chan command.Set, 20)
-    getConsumer := make(chan command.Get, 20)
-    delConsumer := make(chan command.Delete, 20)
-    sttConsumer := make(chan command.Stats, 20)
-    qitConsumer := make(chan command.Quit, 20)
+    comConsumer := make(chan command.Command, 20)
     errors := make(chan error, 20)
     joiner := make(chan uint32, 20)
     go func () {
         defer func() { joiner <- 1 }()
-        for setcomm := range setConsumer {
-            fmt.Printf("set: %s\n", setcomm)
-        }
-    }()
-    go func () {
-        defer func() { joiner <- 1 }()
-        for getcomm := range getConsumer {
-            fmt.Printf("get: %s\n", getcomm)
-        }
-    }()
-    go func () {
-        defer func() { joiner <- 1 }()
-        for comm := range delConsumer {
-            fmt.Printf("del: %s\n", comm)
-        }
-    }()
-    go func () {
-        defer func() { joiner <- 1 }()
-        for comm := range sttConsumer {
-            fmt.Printf("stats: %s\n", comm)
-        }
-    }()
-    go func () {
-        defer func() { joiner <- 1 }()
-        for comm := range qitConsumer {
-            fmt.Printf("quit: %s\n", comm)
+        for comm := range comConsumer {
+            comm.PerformOn(cache)
         }
     }()
     go func () {
@@ -65,23 +53,19 @@ func main () {
 
     lexer := lex.NewLexer(r)
     parser := parser.NewParser(lexer)
-    parser.RegisterHandler(action.NewSet(setConsumer))
-    parser.RegisterHandler(action.NewGet(getConsumer))
-    parser.RegisterHandler(action.NewDelete(delConsumer))
-    parser.RegisterHandler(action.NewStats(sttConsumer))
-    parser.RegisterHandler(action.NewQuit(qitConsumer))
+    parser.RegisterHandler(action.NewSet(comConsumer))
+    parser.RegisterHandler(action.NewGet(comConsumer))
+    parser.RegisterHandler(action.NewDelete(comConsumer))
+    parser.RegisterHandler(action.NewStats(comConsumer))
+    parser.RegisterHandler(action.NewQuit(comConsumer))
     err := parser.Parse()
     for ; err == nil; err = parser.Parse() {
     }
 
     errors <- err
-    close(setConsumer)
-    close(getConsumer)
-    close(delConsumer)
-    close(sttConsumer)
-    close(qitConsumer)
+    close(comConsumer)
     close(errors)
-    for i := 0; i < 6; i++ {
+    for i := 0; i < 2; i++ {
         <-joiner
     }
 }

@@ -7,10 +7,10 @@ import (
 
 //
 type Get struct {
-    consumer chan<- command.Get
+    consumer chan<- command.Command
 }
 
-func NewGet (consumer chan<- command.Get) *Get {
+func NewGet (consumer chan<- command.Command) *Get {
     return &Get {
         consumer: consumer,
     }
@@ -49,6 +49,6 @@ func (action *Get) Parse (lexer *lex.Lexer) error {
         return err
     }
 
-    action.consumer <- comm
+    action.consumer <- &comm
     return nil
 }

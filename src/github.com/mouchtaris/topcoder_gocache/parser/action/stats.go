@@ -7,10 +7,10 @@ import (
 
 //
 type Stats struct {
-    consumer chan<- command.Stats
+    consumer chan<- command.Command
 }
 
-func NewStats (consumer chan<- command.Stats) *Stats {
+func NewStats (consumer chan<- command.Command) *Stats {
     return &Stats {
         consumer: consumer,
     }
@@ -30,6 +30,6 @@ func (action *Stats) Parse (lex *lex.Lexer) error {
         return err
     }
 
-    action.consumer <- comm
+    action.consumer <- &comm
     return nil
 }
