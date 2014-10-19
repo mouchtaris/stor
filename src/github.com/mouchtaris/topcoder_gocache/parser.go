@@ -62,22 +62,42 @@ func isWord (c byte) bool {
 }
 
 //
+// Properly handle compacting the parser's buffer.
+// This is required because the parser is using indefinite
+// look-ahead so as to save memory. Thus, when compact()ing
+// the buffer, the token being curretly read has to be
+// saved from oblivion.
+func (lex *Parser) compact () {
+    if lex.length > 0 {
+        // We're in the middle of parsing a token.
+        lex.Token() // TODO remove
+        lex.buf.StepBack(lex.length)
+        lex.buf.Snapshot(0) // TODO remove
+    }
+    lex.buf.Compact()
+}
+
+//
 // Make sure that a buffer can always provide.
 // Also, temporarily supress EOF when there are still
 // buffered bytes to process.
 func (lex *Parser) fillBuffer () error {
-    lex.buf.Compact()
+    lex.compact()
     if (lex.buf.Available() == 0) {
         return util.ErrBufferOverflow
     }
 
     n, err := lex.buf.ReadFrom(lex.r)
+    if err == nil || err == io.EOF {
+        // bring back to "length" bytes read for current token
+        lex.buf.Flip()
+        lex.buf.Read(make([]byte, lex.length))
+    }
     if err != nil && (err != io.EOF || n == 0) {
         // only propagate EOF errors if there are
         // no more buffered bytes left
         return err
     }
-    lex.buf.Flip()
     return nil
 }
 
@@ -124,11 +144,13 @@ func (lex *Parser) readWhile (pred func(byte)bool) error {
     if err == nil {
         lex.buf.StepBack(1)
         lex.length = i
+        lex.Token() // TODO remove
         return nil
     }
     // supress EOF "error" if bytes were read, it will reappear in the next call
     if err == io.EOF && i > 0 {
         lex.length = i
+        lex.Token() // TODO remove
         return nil
     }
     lex.buf.StepBack(i)
