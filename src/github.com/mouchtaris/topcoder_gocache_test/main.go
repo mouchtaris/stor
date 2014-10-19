@@ -5,6 +5,8 @@ import (
     "github.com/mouchtaris/topcoder_gocache/cache"
     "fmt"
     "net"
+    "os"
+    "os/signal"
 )
 
 func errorHandler (errors <-chan error) {
@@ -22,9 +24,14 @@ func serveNext (s *gocache.Server, l net.Listener, errors chan<- error) {
     s.GoServe(conn)
 }
 
-func serveIncoming (s* gocache.Server, l net.Listener, errors chan<- error) {
+func serveIncoming (s* gocache.Server, l net.Listener, stop <-chan uint32, errors chan<- error) {
     for {
-        serveNext(s, l, errors)
+        select {
+        case <-stop:
+            break;
+        default:
+            serveNext(s, l, errors)
+        }
     }
 }
 
@@ -43,6 +50,12 @@ func dispatchAll (disp *gocache.Dispatcher, cache *cache.Cache, errors chan<- er
     }
 }
 
+func handleInterrupt (interruption <-chan os.Signal, joiner chan<- uint32) {
+    <-interruption
+    fmt.Println("Interrupt signal received -- Byebye")
+    joiner <- 1
+}
+
 func main () {
     errors := make(chan error, 1)
     cache := cache.NewCache(1)
@@ -50,13 +63,21 @@ func main () {
     server := gocache.NewServer(20, dispatcher.RequestSink(), errors)
     listener := newListener("0.0.0.0:11000")
     joiner := make(chan uint32, 1)
+    stop := make(chan uint32, 1)
+    interruption := make(chan os.Signal, 10)
+    shutdown := func () {
+        stop <- 1
+        server.Join()
+        server.Close()
+        close(errors)
+    }
+    defer shutdown()
+    signal.Notify(interruption, os.Interrupt)
 
+    go handleInterrupt(interruption, joiner)
     go errorHandler(errors)
-    go serveIncoming(server, listener, errors)
+    go serveIncoming(server, listener, stop, errors)
     go dispatchAll(dispatcher, cache, errors)
 
     <-joiner
-    server.Join()
-    server.Close()
-    close(errors)
 }
