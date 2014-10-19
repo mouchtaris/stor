@@ -30,7 +30,63 @@ func NewServer (backlog uint32, requests chan<- Request, errors chan<- error) *S
 }
 
 //
+// Drain the done queue.
 //
+// This function runs on the main routine.
+func (server *Server) drainDone () {
+    for cont := true; cont; {
+        select {
+        case <-server.done:
+            server.running--
+        default:
+            cont = false
+        }
+    }
+}
+
+//
+// Try to claim a job pass.
+// If there are too many jobs running currently
+// this will block until some other job is done.
+//
+// This function runs on the main routine.
+func (server *Server) jobSemaphoreDown () {
+    // If we can append to the job semaphore, it's
+    // ok to start another routine.
+    //
+    // If not, then we need to wait for other
+    // jobs to complete.
+    //
+    // Some (or many) of them may be waiting
+    // to signal their completion on the
+    // "done" channel, so if there is no
+    // space on the semaphore queue, we should
+    // also try to drain the done-queue.
+    for cont := true; cont; {
+        select {
+        case server.sem <- 1:
+            cont = false
+        default:
+            server.drainDone()
+        }
+    }
+}
+
+//
+// Mark a job opening.
+// Send a job done signal down the done queue
+// and releave the jobs semaphore queue by one.
+//
+// This function runs on the job subroutine.
+func (server* Server) jobSemaphoreUp () {
+    server.done <- 1
+    <-server.sem
+}
+
+//
+// Perform the actual per-subroutine work.
+//
+// This function runs on the job subroutine.
 func serve (requests chan<- Request, input io.ReadWriteCloser) error {
     lexer := lex.NewLexer(input)
     parser := parser.NewParser(lexer)
@@ -52,32 +108,22 @@ func serve (requests chan<- Request, input io.ReadWriteCloser) error {
         errmsg := fmt.Sprintf("ERROR %s\r\n", err)
         input.Write([]byte(errmsg))
     }
+
     input.Close()
     return err
 }
 
 //
+// Wrap the actual work function in concurrency
+// markers.
 //
+// This function runs on the job subroutine.
 func (server* Server) wrapServing (input io.ReadWriteCloser) {
     err := serve(server.requests, input)
     if err != nil {
         server.errors<- err
     }
-    server.done <- 1
-    <-server.sem
-}
-
-//
-//
-func (server *Server) drainDone () {
-    for cont := true; cont; {
-        select {
-        case <-server.done:
-            server.running--
-        default:
-            cont = false
-        }
-    }
+    server.jobSemaphoreUp()
 }
 
 //
@@ -85,14 +131,7 @@ func (server *Server) drainDone () {
 // Parsed commands are send to the server's command stream
 // for further processing by some other consumer.
 func (server *Server) GoServe (input io.ReadWriteCloser) {
-    for cont := true; cont; {
-        select {
-        case server.sem <- 1:
-            cont = false
-        default:
-            server.drainDone()
-        }
-    }
+    server.jobSemaphoreDown()
     server.running++
     go server.wrapServing(input)
 }
