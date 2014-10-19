@@ -8,7 +8,7 @@ import (
 var ErrBufferUnderflow = errors.New("buffer underflow")
 var ErrBufferOverflow = errors.New("buffer overflow")
 
-func Min (a, b int) int {
+func Min (a, b uint32) uint32 {
     if (a < b) {
         return a
     }
@@ -65,12 +65,26 @@ func (buf *FixedByteBuffer) ReadFrom (r io.Reader) (bytesWritten int, err error)
 // Read a single byte. Returns io.EOF error if no more
 // bytes are available.
 func (buf *FixedByteBuffer) ReadByte () (byte, error) {
-    if buf.Available() == 0 {
+    b := [1]byte { }
+    _, err := buf.Read(b[:])
+    return b[0], err
+}
+
+//
+// Read into a byte slice, updating internal marks.
+// Returns the number of bytes actually read into the
+// slice.
+// If there are no more bytes left in this buffer,
+// then io.EOF is returned as an error.
+func (buf *FixedByteBuffer) Read (p []byte) (int, error) {
+    available := buf.Available()
+    if available == 0 {
         return 0, io.EOF
     }
-    result := buf.mem[buf.pos]
-    buf.pos++
-    return result, nil
+    numbytes := Min(available, uint32(len(p)))
+    copy(p, buf.freeBytes())
+    buf.pos += numbytes
+    return int(numbytes), nil
 }
 
 //
