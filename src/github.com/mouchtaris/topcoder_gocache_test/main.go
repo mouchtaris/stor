@@ -20,6 +20,7 @@ func main () {
 
     setConsumer := make(chan command.Set, 20)
     getConsumer := make(chan command.Get, 20)
+    delConsumer := make(chan command.Delete, 20)
     errors := make(chan error, 20)
     joiner := make(chan uint32, 20)
     go func () {
@@ -36,6 +37,12 @@ func main () {
     }()
     go func () {
         defer func() { joiner <- 1 }()
+        for comm := range delConsumer {
+            fmt.Printf("del: %s\n", comm)
+        }
+    }()
+    go func () {
+        defer func() { joiner <- 1 }()
         for err := range errors {
             fmt.Printf("error: %s\n", err)
         }
@@ -45,6 +52,7 @@ func main () {
     parser := parser.NewParser(lexer)
     parser.RegisterHandler(action.NewSet(setConsumer))
     parser.RegisterHandler(action.NewGet(getConsumer))
+    parser.RegisterHandler(action.NewDelete(delConsumer))
     err := parser.Parse()
     for ; err == nil; err = parser.Parse() {
     }

@@ -9,7 +9,7 @@ type Command struct {
 // A "delete" command
 type Delete struct {
     Command
-    key string
+    Key string
 }
 
 //

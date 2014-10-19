@@ -23,11 +23,13 @@ func (*Set) Name () string {
 
 //
 func (action *Set) Parse (lex *lex.Lexer) error {
+    comm := command.Set { }
+
     err := lex.ReadKey()
     if err != nil {
         return err
     }
-    key := string(lex.Token())
+    comm.Key = string(lex.Token())
 
     err = lex.ReadEOC()
     if err != nil {
@@ -38,13 +40,13 @@ func (action *Set) Parse (lex *lex.Lexer) error {
     if err != nil {
         return err
     }
-    val := string(lex.Token())
+    comm.Data = string(lex.Token())
 
     err = lex.ReadEOC()
     if err != nil {
         return err
     }
 
-    action.consumer <- command.Set { Key: key, Data: val }
+    action.consumer <- comm
     return nil
 }

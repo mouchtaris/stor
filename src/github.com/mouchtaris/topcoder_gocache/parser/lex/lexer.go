@@ -190,11 +190,11 @@ func (lex *Lexer) readWhile (pred func(byte)bool, maxbytes uint32) error {
 
     i := uint32(0)
     c, err := lex.readByte()
-    for ; pred(c) && i < maxbytes && err == nil; c, err = lex.readByte() {
+    for ; pred(c) && i <= maxbytes && err == nil; c, err = lex.readByte() {
         i++
     }
     if err == nil {
-        if i == maxbytes {
+        if i > maxbytes {
             lex.unreadByte(i)
             return ErrInputTooLarge
         }
