@@ -1,0 +1,15 @@
+set key
+value
+
+get key
+
+set kii
+value
+
+get key kii
+
+pet kay
+value
+
+get kay
+

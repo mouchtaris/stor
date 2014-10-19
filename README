@@ -1,0 +1,99 @@
+== Building
+For building this project one needs GNU make and either gcc-go or the go
+suit. The makefile contains targets for both.
+
+    make go  # build with the go suit
+    make gcc # build with gcc-go
+
+The result of make go is ./bin/main while the result of
+make gcc is ./scs .
+
+== Running
+Either ./scs or ./bin/main (after building with make gcc or make go)
+will start a server in the foreground.
+
+The server is reporting EOF reads as errors, but this is expected.
+The client sees none of these as errors.
+
+The requested flags are supported, namely
+  -items sets the maximum number of items allowed in the cache
+  -port sets the listening port
+The binding address is always 0.0.0.0.
+
+
+== Testing
+All basic cases work, and additionally:
+
+  - Too long tokens detection: the maximum token sizes are respected
+    and an error reported when they are exceeded
+    (ERROR input too large)
+  - Unrecognized commands are reported as
+    ERROR no handler registered for this command
+  - Various parsing errors are reported
+    (for example no \r\n when a command is expected to end)
+
+In addition to the parsing errors above, the following runtime
+errors are reported
+  - Attempting to store items beyond the cache's capacity
+    (which has been set through the -items flag upon server
+    startup)
+    ERROR the cache is full
+
+A basic testing script with the examples provided on the topcoder.com
+description is provided. In addition, another test script which demonstrates
+errors and error reporting is provided.
+
+  test/simple.txt
+  test/error*.txt
+
+After each error, the connection is terminated, and therefore all error
+testing cases are provided in separate files.
+  error00: key too large
+  error01: data too large
+  error02: unrecognized command
+  error025:unrecognized command after valid input
+  error03: Parsing error -- too many tokens, expection end-of-command
+  error04: storing beyong capacity (for this the server must be started with -items 1)
+
+== Extending
+Commands are implemented in an extensible manner.
+
+The parser can accept dynamically parsing-handlers, each
+of which reports the "name" of the command that it handlers.
+
+This is implemented in the parser/action package.
+
+Parsing actions are turned in commands, which are responsible
+for carrying out the effects of each command.
+
+Commands are also extensible and are handled polymorphically
+by the server and the dispatcher.
+
+These are implemented in the command/ package.
+
+
+== Concurrency
+The server offers "serving" for each input source, which can
+be any ReadWriteCloser interface.
+
+The amount of serving threads that are allowed to run
+concurrently is parameterisable upon the server's construction.
+
+The dispatcher on the other hand is responsible for executing
+the parsed commands. The dispatcher hold a separate queue for
+controlling how many jobs can be waiting at a time for execution.
+This is also parameterisable upon the dispatcher's construction.
+
+There is no concurrent modifications of the Cache, as all
+requests end up being dispatched from a single-routine dispatching
+call -- that of the dispatcher.
+
+
+== Signal handling
+In order to turn the server off, one can simply send the INTERRUPT
+singal to the process.
+
+This signal is caught and the server shuts down gracefully.
+
+Any open connections are waited for, and then the process exist,
+after also closing the listening port.
