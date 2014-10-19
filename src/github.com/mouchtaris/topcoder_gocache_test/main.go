@@ -3,75 +3,59 @@ package main
 import (
     gocache "github.com/mouchtaris/topcoder_gocache"
     "github.com/mouchtaris/topcoder_gocache/cache"
-    "os"
-    "io"
     "fmt"
+    "net"
 )
 
-type NamedWriter func (p []byte) (int, error)
-
-func (w NamedWriter) Write (p []byte) (int, error) {
-    return w(p)
-}
-
-func (w NamedWriter) Close () error {
-    return nil
-}
-
-func NewNamedWriter (fname string) NamedWriter {
-    return func (p []byte) (int, error) {
-        fmt.Printf("[%s]: ", fname)
-        bs, err := os.Stdout.Write(p);
-        fmt.Println()
-        return bs, err
+func errorHandler (errors <-chan error) {
+    for err := range errors {
+        fmt.Printf("error: %s\n", err)
     }
 }
 
-type InputOutput struct {
-    r io.ReadCloser
-    w io.WriteCloser
+func serveNext (s *gocache.Server, l net.Listener, errors chan<- error) {
+    conn, err := l.Accept()
+    if err != nil {
+        errors <- err
+        return
+    }
+    s.GoServe(conn)
 }
 
-func NewInputOutput (fname string) InputOutput {
-    r, err := os.Open(fname)
+func serveIncoming (s* gocache.Server, l net.Listener, errors chan<- error) {
+    for {
+        serveNext(s, l, errors)
+    }
+}
+
+func newListener (laddr string) net.Listener {
+    l, err := net.Listen("tcp", laddr)
     if err != nil {
         panic(err)
     }
-    return InputOutput {
-        r: r,
-        w: NewNamedWriter(fname),
-    }
+    return l
 }
 
-var Inputs = []InputOutput {
-    NewInputOutput("inputs/00.txt"),
-    NewInputOutput("inputs/01.txt"),
-    NewInputOutput("inputs/02.txt"),
+func dispatchAll (disp *gocache.Dispatcher, cache *cache.Cache, errors chan<- error) {
+    err := disp.DispatchAll(cache)
+    if err != nil {
+        errors <- err
+    }
 }
 
 func main () {
     errors := make(chan error, 1)
     cache := cache.NewCache()
-    disp := gocache.NewDispatcher(1, errors)
-    server := gocache.NewServer(20, disp.RequestSink(), errors)
+    dispatcher := gocache.NewDispatcher(1, errors)
+    server := gocache.NewServer(20, dispatcher.RequestSink(), errors)
+    listener := newListener("0.0.0.0:11000")
+    joiner := make(chan uint32, 1)
 
-    go func () {
-        for err := range errors {
-            fmt.Printf("error: %s\n", err)
-        }
-    }()
+    go errorHandler(errors)
+    go serveIncoming(server, listener, errors)
+    go dispatchAll(dispatcher, cache, errors)
 
-    go func () {
-        err := disp.DispatchAll(cache)
-        if err != nil {
-            errors <- err
-        }
-    }()
-
-    for _, inp := range Inputs {
-        server.GoServe(inp.r, inp.w)
-    }
-
+    <-joiner
     server.Join()
     server.Close()
     close(errors)

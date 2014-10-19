@@ -30,9 +30,7 @@ func NewServer (backlog uint32, requests chan<- Request, errors chan<- error) *S
 
 //
 //
-func serve (requests chan<- Request, input io.ReadCloser, output io.WriteCloser) error {
-    defer input.Close()
-
+func serve (requests chan<- Request, input io.ReadWriteCloser) error {
     lexer := lex.NewLexer(input)
     parser := parser.NewParser(lexer)
     parser.RegisterHandler(action.Set    { })
@@ -43,7 +41,7 @@ func serve (requests chan<- Request, input io.ReadCloser, output io.WriteCloser)
 
     comm, err := parser.Parse()
     for ; err == nil; comm, err = parser.Parse() {
-        requests <- Request { comm, output.Write, output.Close, }
+        requests <- Request { comm, input.Write, input.Close, }
     }
 
     return err
@@ -51,8 +49,8 @@ func serve (requests chan<- Request, input io.ReadCloser, output io.WriteCloser)
 
 //
 //
-func (server* Server) wrapServing (input io.ReadCloser, output io.WriteCloser) {
-    err := serve(server.requests, input, output)
+func (server* Server) wrapServing (input io.ReadWriteCloser) {
+    err := serve(server.requests, input)
     if err != nil {
         server.errors<- err
     }
@@ -77,7 +75,7 @@ func (server *Server) drainDone () {
 // Server (asynchronously) parsing input from the given reader.
 // Parsed commands are send to the server's command stream
 // for further processing by some other consumer.
-func (server *Server) GoServe (input io.ReadCloser, output io.WriteCloser) {
+func (server *Server) GoServe (input io.ReadWriteCloser) {
     for cont := true; cont; {
         select {
         case server.sem <- 1:
@@ -87,7 +85,7 @@ func (server *Server) GoServe (input io.ReadCloser, output io.WriteCloser) {
         }
     }
     server.running++
-    go server.wrapServing(input, output)
+    go server.wrapServing(input)
 }
 
 //
