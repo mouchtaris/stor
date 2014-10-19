@@ -5,6 +5,7 @@ import (
     "io"
     "fmt"
     "errors"
+    "unicode"
 )
 
 const MAX_KEY_SIZE    = 250
@@ -75,6 +76,12 @@ func isWord (c byte) bool {
         return true
     }
     return false
+}
+
+//
+// Check whether an input character is a "value" character.
+func isValue (c byte) bool {
+    return isWord(c) || unicode.IsSpace(rune(c)) && c != '\r'
 }
 
 //
@@ -240,7 +247,7 @@ func (lex *Lexer) ReadKey () error {
 // If no error is returned, the current
 // token can be accessed by Token().
 func (lex *Lexer) ReadValue () error {
-    return lex.readWhile(isWord, MAX_VALUE_SIZE)
+    return lex.readWhile(isValue, MAX_VALUE_SIZE)
 }
 
 //
