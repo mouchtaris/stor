@@ -111,7 +111,7 @@ func (buf *FixedByteBuffer) Snapshot (n uint32) []byte {
     if n > buf.pos {
         panic(fmt.Sprintf("AASDASDASD pos(%d), lim(%d), n(%d)", buf.pos, buf.limit, n))
     }
-    if buf.pos - n >= buf.limit {
+    if buf.pos - n > buf.limit {
         panic(fmt.Sprintf("OOOOOOOO pos(%d), lim(%d), n(%d)", buf.pos, buf.limit, n))
     }
     return buf.mem[buf.pos - n : buf.pos]

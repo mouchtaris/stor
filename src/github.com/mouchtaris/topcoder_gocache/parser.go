@@ -70,9 +70,7 @@ func isWord (c byte) bool {
 func (lex *Parser) compact () {
     if lex.length > 0 {
         // We're in the middle of parsing a token.
-        lex.Token() // TODO remove
         lex.buf.StepBack(lex.length)
-        lex.buf.Snapshot(0) // TODO remove
     }
     lex.buf.Compact()
 }
@@ -110,7 +108,20 @@ func (lex *Parser) readByte () (byte, error) {
     if err != nil {
         return 0, err
     }
+    lex.length++
     return lex.buf.ReadByte()
+}
+
+//
+// Unread the last read byte, so that it becomes available for
+// reading again.
+func (lex *Parser) unreadByte (n uint32) error {
+    err := lex.buf.StepBack(n)
+    if err != nil {
+        return err
+    }
+    lex.length -= n
+    return nil
 }
 
 //
@@ -121,8 +132,9 @@ func (lex *Parser) consumeSpace () error {
     for ; !isWord(c) && err == nil; c, err = lex.readByte() {
     }
     if err == nil {
-        lex.buf.StepBack(1)
+        err = lex.unreadByte(1)
     }
+    lex.length = 0
     return err
 }
 
@@ -142,18 +154,14 @@ func (lex *Parser) readWhile (pred func(byte)bool) error {
         i++
     }
     if err == nil {
-        lex.buf.StepBack(1)
-        lex.length = i
-        lex.Token() // TODO remove
+        lex.unreadByte(1)
         return nil
     }
     // supress EOF "error" if bytes were read, it will reappear in the next call
     if err == io.EOF && i > 0 {
-        lex.length = i
-        lex.Token() // TODO remove
         return nil
     }
-    lex.buf.StepBack(i)
+    lex.unreadByte(i)
     return err
 }
 
@@ -185,7 +193,6 @@ func (lex *Parser) Token () []byte {
 // If no error is returned, the token's textual
 // value can be retrieved by calling Token().
 func (lex *Parser) Next () error {
-    lex.length = 0
     err := lex.readCommand()
     if err != nil {
         return err
