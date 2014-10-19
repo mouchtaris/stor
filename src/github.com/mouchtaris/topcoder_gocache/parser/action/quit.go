@@ -3,7 +3,10 @@ package action
 import (
     "github.com/mouchtaris/topcoder_gocache/lex"
     "github.com/mouchtaris/topcoder_gocache/command"
+    "errors"
 )
+
+var ErrQuit = errors.New("quiting")
 
 //
 type Quit struct { }
@@ -22,5 +25,5 @@ func (Quit) Parse (lex *lex.Lexer) (command.Command, error) {
         return nil, err
     }
 
-    return &comm, nil
+    return &comm, ErrQuit
 }

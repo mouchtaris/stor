@@ -43,6 +43,9 @@ func serve (requests chan<- Request, input io.ReadWriteCloser) error {
     for ; err == nil; comm, err = parser.Parse() {
         requests <- Request { comm, input.Write, input.Close, }
     }
+    if err == action.ErrQuit && comm != nil {
+        requests <- Request { comm, input.Write, input.Close, }
+    }
 
     return err
 }
