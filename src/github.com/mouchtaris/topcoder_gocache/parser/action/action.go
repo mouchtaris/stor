@@ -2,6 +2,7 @@ package action
 
 import (
     "github.com/mouchtaris/topcoder_gocache/lex"
+    "github.com/mouchtaris/topcoder_gocache/command"
 )
 
 //
@@ -9,5 +10,5 @@ import (
 // a single command.
 type Action interface {
     Name () string
-    Parse (*lex.Lexer) error
+    Parse (*lex.Lexer) (command.Command, error)
 }

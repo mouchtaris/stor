@@ -3,33 +3,24 @@ package action
 import (
     "github.com/mouchtaris/topcoder_gocache/lex"
     "github.com/mouchtaris/topcoder_gocache/command"
-    "errors"
 )
 
-var ErrQuit = errors.New("quiting")
+//
+type Quit struct { }
 
 //
-type Quit struct {
-    consumer chan<- command.Command
-}
-
-func NewQuit (consumer chan<- command.Command) *Quit {
-    return &Quit {
-        consumer: consumer,
-    }
-}
-
-//
-func (*Quit) Name () string {
+func (Quit) Name () string {
     return "quit"
 }
 
 //
-func (action *Quit) Parse (lex *lex.Lexer) error {
+func (Quit) Parse (lex *lex.Lexer) (command.Command, error) {
+    comm := command.Quit { }
+
     err := lex.ReadEOC()
     if err != nil {
-        return err
+        return nil, err
     }
 
-    return ErrQuit
+    return &comm, nil
 }

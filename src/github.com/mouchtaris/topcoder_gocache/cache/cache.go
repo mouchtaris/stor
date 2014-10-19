@@ -1,5 +1,9 @@
 package cache
 
+import (
+    "math"
+)
+
 // A Cache models the server's back-end.
 //
 // It provides all requested caching functionality while
@@ -7,7 +11,12 @@ package cache
 //
 type Cache struct {
     entries map[string] string
-    gets, sets, getHits, getMisses, deleteHits, deleteMisses, size, limit uint32
+    stats Stats
+}
+
+type Stats struct {
+    Gets, Sets, GetHits, GetMisses, DeleteHits, DeleteMisses uint32
+    CurrentItems, Limit uint32
 }
 
 //
@@ -21,15 +30,22 @@ func (db *Cache) untrackedGet (key string) (item string, present bool) {
 // Construct and initialise a Cache.
 func NewCache () *Cache {
     return &Cache {
-        map[string] string { },
-        0, 0, 0, 0, 0, 0, 0, 0,
+        entries: map[string] string { },
     }
+}
+
+//
+// Returns the current statistics for this cache.
+func (db *Cache) Stats () Stats {
+    db.stats.CurrentItems = uint32(len(db.entries))
+    db.stats.Limit = math.MaxUint16
+    return db.stats
 }
 
 //
 // Set a value in the cache. Also update relative statistics.
 func (db *Cache) Set (key, data string) {
-    db.sets++;
+    db.stats.Sets++;
     db.entries[key] = data
 }
 
@@ -37,12 +53,12 @@ func (db *Cache) Set (key, data string) {
 // Retrieve a value from the cache, if it is stored.
 // Also update relative statistics.
 func (db *Cache) Get (key string) (item string, present bool) {
-    db.gets++;
+    db.stats.Gets++;
     item, present = db.untrackedGet(key)
     if present {
-        db.getHits++
+        db.stats.GetHits++
     } else {
-        db.getMisses++
+        db.stats.GetMisses++
     }
     return
 }
@@ -53,9 +69,9 @@ func (db *Cache) Get (key string) (item string, present bool) {
 func (db *Cache) Delete (key string) (deletedItem string, present bool){
     deletedItem, present = db.untrackedGet(key)
     if present {
-        db.deleteHits++
+        db.stats.DeleteHits++
     } else {
-        db.deleteMisses++
+        db.stats.DeleteMisses++
     }
     return
 }

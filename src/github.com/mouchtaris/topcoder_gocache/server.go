@@ -4,13 +4,12 @@ import (
     "github.com/mouchtaris/topcoder_gocache/lex"
     "github.com/mouchtaris/topcoder_gocache/parser/action"
     "github.com/mouchtaris/topcoder_gocache/parser"
-    "github.com/mouchtaris/topcoder_gocache/command"
     "io"
 )
 
 type Server struct {
     sem chan uint32
-    commands chan<- command.Command
+    requests chan<- Request
     errors chan<- error
     done chan uint32
     running uint32
@@ -19,33 +18,32 @@ type Server struct {
 //
 // Construct a new server, which will start at most "backlog"
 // concurrent servers.
-func NewServer (backlog uint32, commands chan<- command.Command, errors chan<- error) *Server {
+func NewServer (backlog uint32, requests chan<- Request, errors chan<- error) *Server {
     return &Server {
         sem: make(chan uint32, backlog),
         done: make(chan uint32, backlog),
         running: 0,
-        commands: commands,
+        requests: requests,
         errors: errors,
     }
 }
 
 //
 //
-func serve (commands chan<- command.Command, input io.ReadCloser) error {
-    defer func () {
-        input.Close()
-    }()
+func serve (requests chan<- Request, input io.ReadCloser, output io.WriteCloser) error {
+    defer input.Close()
 
     lexer := lex.NewLexer(input)
     parser := parser.NewParser(lexer)
-    parser.RegisterHandler(action.NewSet(commands))
-    parser.RegisterHandler(action.NewGet(commands))
-    parser.RegisterHandler(action.NewDelete(commands))
-    parser.RegisterHandler(action.NewStats(commands))
-    parser.RegisterHandler(action.NewQuit(commands))
+    parser.RegisterHandler(action.Set    { })
+    parser.RegisterHandler(action.Get    { })
+    parser.RegisterHandler(action.Delete { })
+    parser.RegisterHandler(action.Stats  { })
+    parser.RegisterHandler(action.Quit   { })
 
-    err := parser.Parse()
-    for ; err == nil; err = parser.Parse() {
+    comm, err := parser.Parse()
+    for ; err == nil; comm, err = parser.Parse() {
+        requests <- Request { comm, output.Write, output.Close, }
     }
 
     return err
@@ -53,8 +51,8 @@ func serve (commands chan<- command.Command, input io.ReadCloser) error {
 
 //
 //
-func (server* Server) wrapServing (input io.ReadCloser) {
-    err := serve(server.commands, input)
+func (server* Server) wrapServing (input io.ReadCloser, output io.WriteCloser) {
+    err := serve(server.requests, input, output)
     if err != nil {
         server.errors<- err
     }
@@ -79,7 +77,7 @@ func (server *Server) drainDone () {
 // Server (asynchronously) parsing input from the given reader.
 // Parsed commands are send to the server's command stream
 // for further processing by some other consumer.
-func (server *Server) GoServe (input io.ReadCloser) {
+func (server *Server) GoServe (input io.ReadCloser, output io.WriteCloser) {
     for cont := true; cont; {
         select {
         case server.sem <- 1:
@@ -89,7 +87,7 @@ func (server *Server) GoServe (input io.ReadCloser) {
         }
     }
     server.running++
-    go server.wrapServing(input)
+    go server.wrapServing(input, output)
 }
 
 //
@@ -106,5 +104,5 @@ func (server *Server) Join () {
 // commands channel and thus serving anything else
 // will result in panic.
 func (server *Server) Close () {
-    close(server.commands)
+    close(server.requests)
 }

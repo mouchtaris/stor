@@ -6,36 +6,27 @@ import (
 )
 
 //
-type Delete struct {
-    consumer chan<- command.Command
-}
-
-func NewDelete (consumer chan<- command.Command) *Delete {
-    return &Delete {
-        consumer: consumer,
-    }
-}
+type Delete struct { }
 
 //
-func (*Delete) Name () string {
+func (Delete) Name () string {
     return "delete"
 }
 
 //
-func (action *Delete) Parse (lex *lex.Lexer) error {
+func (Delete) Parse (lex *lex.Lexer) (command.Command, error) {
     comm := command.Delete{ }
 
     err := lex.ReadKey()
     if err != nil {
-        return err
+        return nil, err
     }
     comm.Key = string(lex.Token())
 
     err = lex.ReadEOC()
     if err != nil {
-        return err
+        return nil, err
     }
 
-    action.consumer <- &comm
-    return nil
+    return &comm, nil
 }

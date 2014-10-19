@@ -6,30 +6,21 @@ import (
 )
 
 //
-type Stats struct {
-    consumer chan<- command.Command
-}
-
-func NewStats (consumer chan<- command.Command) *Stats {
-    return &Stats {
-        consumer: consumer,
-    }
-}
+type Stats struct { }
 
 //
-func (*Stats) Name () string {
+func (Stats) Name () string {
     return "stats"
 }
 
 //
-func (action *Stats) Parse (lex *lex.Lexer) error {
+func (Stats) Parse (lex *lex.Lexer) (command.Command, error) {
     comm := command.Stats { }
 
     err := lex.ReadEOC()
     if err != nil {
-        return err
+        return nil, err
     }
 
-    action.consumer <- &comm
-    return nil
+    return &comm, nil
 }

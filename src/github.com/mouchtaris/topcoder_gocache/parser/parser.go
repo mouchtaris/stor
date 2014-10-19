@@ -3,6 +3,7 @@ package parser
 import (
     "github.com/mouchtaris/topcoder_gocache/parser/action"
     "github.com/mouchtaris/topcoder_gocache/lex"
+    "github.com/mouchtaris/topcoder_gocache/command"
     "errors"
 )
 
@@ -35,16 +36,16 @@ func (yy *Parser) RegisterHandler (handler action.Action) error {
     return nil
 }
 
-func (yy *Parser) Parse () error {
+func (yy *Parser) Parse () (command.Command, error) {
     err := yy.lex.ReadCommand()
     if err != nil {
-        return err
+        return nil, err
     }
 
     commstr := string(yy.lex.Token())
     handler, ok := yy.handlers[commstr]
     if !ok {
-        return ErrNoHandler
+        return nil, ErrNoHandler
     }
 
     return handler.Parse(yy.lex)
