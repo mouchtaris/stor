@@ -29,7 +29,7 @@ type Quit struct {
 // A "set" command.
 type Set struct {
     Command
-    key, data string
+    Key, Data string
 }
 
 //

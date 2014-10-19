@@ -1,4 +1,4 @@
-package parser
+package lex
 
 import (
     "github.com/mouchtaris/topcoder_gocache/util"
@@ -14,6 +14,7 @@ const MAX_COMMAND_SIZE = LONGEST_COMMAND
 const BUFFER_SIZE     = MAX_VALUE_SIZE * 2 // 16KiB
 
 var ErrInputTooLarge = errors.New("input too large")
+var ErrLexing = errors.New("lexing error")
 
 // TODO remove
 func log (format string, args ... interface { }) {
@@ -23,19 +24,22 @@ func log (format string, args ... interface { }) {
 }
 
 //
-// The parser is responsible for parsing raw input
-// characters (bytes) into meaningful tokens and
-// commands.
+// The lexer is responsible for parsing raw input
+// characters (bytes) into delimited tokens.
 //
-// The parser is also resposible for ensuring
+// The lexer is also resposible for ensuring
 // input data size limitations.
 //
+// It is a very flexible lexer, as it operates
+// on Readers.
 type Lexer struct {
     r io.Reader
     buf *util.FixedByteBuffer
     length uint32
 }
 
+//
+// A lexer -- operates simply on a reader.
 func NewLexer (r io.Reader) *Lexer {
     return &Lexer {
         r,
@@ -228,6 +232,30 @@ func (lex *Lexer) ReadKey () error {
 func (lex *Lexer) ReadValue () error {
     return lex.readWhile(isWord, MAX_VALUE_SIZE)
 }
+
+//
+// Return the end-of-command sequence,
+// whish is \r\n.
+func (lex *Lexer) ReadEOC () error {
+    b, err := lex.readByte()
+    if err != nil {
+        return err
+    }
+    if b != '\r' {
+        return ErrLexing
+    }
+
+    b, err = lex.readByte()
+    if err != nil {
+        return err
+    }
+    if b != '\n' {
+        return ErrLexing
+    }
+
+    return nil
+}
+
 //
 // Return a slice view of the current
 // token read, in the buffer memory.
