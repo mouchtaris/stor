@@ -37,7 +37,6 @@ func (disp *Dispatcher) DispatchAll(cach *cache.Cache) error {
 			errmsg := fmt.Sprintf("ERROR %s\r\n", err)
 			writeBack(errmsg)
 			disp.errors <- err
-			req.Close()
 		}
 	}
 	return nil

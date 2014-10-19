@@ -77,6 +77,7 @@ func main() {
 		server.Join()
 		server.Close()
 		close(errors)
+		listener.Close()
 	}
 	defer shutdown()
 	signal.Notify(interruption, os.Interrupt)

@@ -1,0 +1,22 @@
+set sushi
+delicious
+set topcoder
+fun
+
+get sushi topcoder
+
+get sushi
+
+delete sushi
+
+get sushi
+
+get topcoder
+
+get topcoder sushi
+
+delete sushi
+
+stats
+
+quit
