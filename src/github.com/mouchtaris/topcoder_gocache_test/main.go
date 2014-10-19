@@ -3,7 +3,6 @@ package main
 import (
     gocache "github.com/mouchtaris/topcoder_gocache"
     "github.com/mouchtaris/topcoder_gocache/cache"
-    "github.com/mouchtaris/topcoder_gocache/command"
     "os"
     "io"
     "fmt"
@@ -26,15 +25,8 @@ var Inputs = []io.ReadCloser {
 func main () {
     errors := make(chan error, 1)
     cache := cache.NewCache()
-    //disp := gocache.NewDispatcher(1, errors)
-    commands := make(chan command.Command, 1)
-    server := gocache.NewServer(20, commands, errors)
-
-    go func () {
-        for comm  := range commands {
-            comm.PerformOn(cache)
-        }
-    }()
+    disp := gocache.NewDispatcher(1, errors)
+    server := gocache.NewServer(20, disp.CommandsChannel(), errors)
 
     go func () {
         for err := range errors {
@@ -42,19 +34,18 @@ func main () {
         }
     }()
 
-//    go func () {
-//        err := disp.DispatchAll(cache)
-//        if err != nil {
-//            errors <- err
-//        }
-//        joiner <- 1
-//    }()
+    go func () {
+        err := disp.DispatchAll(cache)
+        if err != nil {
+            errors <- err
+        }
+    }()
 
     for _, inp := range Inputs {
         server.GoServe(inp)
     }
 
     server.Join()
-    close(commands)
+    server.Close()
     close(errors)
 }

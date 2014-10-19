@@ -100,3 +100,11 @@ func (server *Server) Join () {
     }
     server.running = 0
 }
+
+//
+// Close this server. This closes the underlying
+// commands channel and thus serving anything else
+// will result in panic.
+func (server *Server) Close () {
+    close(server.commands)
+}
