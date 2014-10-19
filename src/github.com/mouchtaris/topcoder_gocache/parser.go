@@ -112,6 +112,10 @@ func (lex *Parser) consumeSpace () error {
 // Whitespace is ignored and the token is formulated
 // according to the given predicate for characters.
 func (lex *Parser) readWhile (pred func(byte)bool) error {
+    if err := lex.consumeSpace(); err != nil {
+        return err
+    }
+
     i := uint32(0)
     c, err := lex.readByte()
     for ; pred(c) && err == nil; c, err = lex.readByte() {
@@ -120,12 +124,12 @@ func (lex *Parser) readWhile (pred func(byte)bool) error {
     if err == nil {
         lex.buf.StepBack(1)
         lex.length = i
-        return lex.consumeSpace()
+        return nil
     }
     // supress EOF "error" if bytes were read, it will reappear in the next call
     if err == io.EOF && i > 0 {
         lex.length = i
-        return lex.consumeSpace()
+        return nil
     }
     lex.buf.StepBack(i)
     return err

@@ -1,5 +1,5 @@
 _build/github.com/mouchtaris/%.o: src/github.com/mouchtaris/%/*.go
-	gccgo -I _build -c -o $@ -pedantic -Wall -Wextra $^
+	gccgo -I _build -g -O0 -c -o $@ -pedantic -Wall -Wextra $^
 
 pkgdir = _build/github.com/mouchtaris/topcoder_gocache
 dirs = \
