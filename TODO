@@ -1,0 +1,8 @@
+1. parser actions result in restricted environmentally aware
+   closed actions. These are not enough to be directly executed
+   and be flexible enough to handle both the cache and the
+   input link-connections.
+   There should be an additional layer introduced, which will
+   receive the parsed commands and transform them into completely
+   closed commands, each one being a closer of everything it needs
+   in order to perform.
