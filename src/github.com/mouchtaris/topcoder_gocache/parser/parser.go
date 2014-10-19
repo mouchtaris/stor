@@ -2,7 +2,7 @@ package parser
 
 import (
     "github.com/mouchtaris/topcoder_gocache/parser/action"
-    "github.com/mouchtaris/topcoder_gocache/parser/lex"
+    "github.com/mouchtaris/topcoder_gocache/lex"
     "errors"
 )
 

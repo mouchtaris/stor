@@ -1,7 +1,7 @@
 package action
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/parser/lex"
+    "github.com/mouchtaris/topcoder_gocache/lex"
 )
 
 //

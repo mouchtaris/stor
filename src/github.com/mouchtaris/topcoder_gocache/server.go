@@ -1,7 +1,7 @@
 package topcoder_gocache
 
 import (
-    "github.com/mouchtaris/topcoder_gocache/parser/lex"
+    "github.com/mouchtaris/topcoder_gocache/lex"
     "github.com/mouchtaris/topcoder_gocache/parser/action"
     "github.com/mouchtaris/topcoder_gocache/parser"
     "github.com/mouchtaris/topcoder_gocache/command"

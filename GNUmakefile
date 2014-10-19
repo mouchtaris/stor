@@ -6,7 +6,7 @@ dirs = \
 	${pkgdir}/cache \
 	${pkgdir}/parser \
 	${pkgdir}/parser/action \
-	${pkgdir}/parser/lex \
+	${pkgdir}/lex \
 
 all: gcc go
 gcc: ${dirs} lol
@@ -18,7 +18,7 @@ lol: \
      ${pkgdir}/util.o \
      ${pkgdir}/cache.o \
      ${pkgdir}/command.o \
-     ${pkgdir}/parser/lex.o \
+     ${pkgdir}/lex.o \
      ${pkgdir}/parser/action.o \
      ${pkgdir}/parser.o \
      ${pkgdir}.o \
