@@ -13,7 +13,7 @@ import (
 )
 
 func main () {
-    r := strings.NewReader("set hello you\r\nset hi me\r\nget hello hi\r\ndelete hi\r\n")
+    r := strings.NewReader("set hello\r\nyou\r\nset hi\r\nme\r\nget hello hi\r\ndelete hi\r\n")
     var _ *lex.Lexer = lex.NewLexer(r)
     var _ gocache.Server
     var _ io.Reader = os.Stdin

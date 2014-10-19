@@ -153,19 +153,29 @@ func (lex *Lexer) unreadByte (n uint32) error {
 }
 
 //
-// Consumes all chars that are of no interest to anyone (like whitespace)
-// without keeping track of anything.
-func (lex *Lexer) consumeSpace () error {
-    log("consuming space, length=%d %s", lex.length, lex.buf.Stats())
+// Skips all characters for which the given predicate holds true.
+// Does not keep track of anything, neither is any backtracking possible.
+// Returns any error that possibly comes up during input reading.
+func (lex *Lexer) skip (pred func (byte) bool) error {
+    log("skipping, length=%d %s", lex.length, lex.buf.Stats())
+    lex.length = 0
     c, err := lex.readByte()
-    for ; !isWord(c) && err == nil; c, err = lex.readByte() {
+    for pred(c) && err == nil {
+        lex.length = 0
+        c, err = lex.readByte()
     }
     if err == nil {
         err = lex.unreadByte(1)
     }
-    log("space consumed, length (before setting to 0) =%d %s", lex.length, lex.buf.Stats())
-    lex.length = 0
+    log("skipped, length (should be 0) =%d %s", lex.length, lex.buf.Stats())
     return err
+}
+
+//
+// Consumes all chars that are of no interest to anyone (like whitespace)
+// without keeping track of anything.
+func (lex *Lexer) consumeSpace () error {
+    return lex.skip(func (c byte) bool { return !isWord(c); })
 }
 
 //
@@ -236,11 +246,28 @@ func (lex *Lexer) ReadValue () error {
 //
 // Return the end-of-command sequence,
 // whish is \r\n.
+// If this is not the next sequence in the input stream,
+// ErrLexing is return and the stream remains intact
+// (except for consumed whitespace).
 func (lex *Lexer) ReadEOC () error {
+    rollback := uint32(0)
+    defer func () {
+        lex.unreadByte(rollback)
+    }()
+
+    err := lex.skip(func (c byte) bool {
+        return !isWord(c) && c != '\r'
+    })
+    if err != nil {
+        return err
+    }
+
     b, err := lex.readByte()
     if err != nil {
         return err
     }
+    rollback++
+
     if b != '\r' {
         return ErrLexing
     }
@@ -249,6 +276,8 @@ func (lex *Lexer) ReadEOC () error {
     if err != nil {
         return err
     }
+    rollback++
+
     if b != '\n' {
         return ErrLexing
     }

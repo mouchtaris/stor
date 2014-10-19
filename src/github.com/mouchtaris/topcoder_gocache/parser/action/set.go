@@ -29,6 +29,11 @@ func (comm *Set) Parse (lex *lex.Lexer) error {
     }
     key := string(lex.Token())
 
+    err = lex.ReadEOC()
+    if err != nil {
+        return err
+    }
+
     err = lex.ReadValue()
     if err != nil {
         return err
