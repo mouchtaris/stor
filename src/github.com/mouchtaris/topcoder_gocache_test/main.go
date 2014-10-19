@@ -2,6 +2,7 @@ package main
 
 import (
     gocache "github.com/mouchtaris/topcoder_gocache"
+    "github.com/mouchtaris/topcoder_gocache/parser"
     "fmt"
     "strings"
     "os"
@@ -9,9 +10,10 @@ import (
 
 func main () {
     r := strings.NewReader("set asok asda")
-    var _ *gocache.Parser = gocache.NewParser(r)
+    var _ *parser.Lexer = parser.NewLexer(r)
+    var _ gocache.Server
 
-    parser := gocache.NewParser(os.Stdin)
+    parser := parser.NewLexer(os.Stdin)
     pn := func () error {
         err := parser.ReadCommand()
         if err == nil {
@@ -21,12 +23,5 @@ func main () {
         }
         return err
     }
-    pn()
-    pn()
-    pn()
-    pn()
-    pn()
-    pn()
-    pn()
-    pn()
+    for pn() == nil {}
 }

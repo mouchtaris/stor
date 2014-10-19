@@ -14,6 +14,7 @@ ${dirs}:
 lol: \
      ${pkgdir}/command.o \
      ${pkgdir}/util.o \
+     ${pkgdir}/parser.o \
      ${pkgdir}.o \
      ${pkgdir}_test.o
 	gccgo -o $@ $^

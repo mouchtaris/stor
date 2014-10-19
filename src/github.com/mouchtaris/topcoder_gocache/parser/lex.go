@@ -1,4 +1,4 @@
-package topcoder_gocache
+package parser
 
 import (
     "github.com/mouchtaris/topcoder_gocache/util"
@@ -30,14 +30,14 @@ func log (format string, args ... interface { }) {
 // The parser is also resposible for ensuring
 // input data size limitations.
 //
-type Parser struct {
+type Lexer struct {
     r io.Reader
     buf *util.FixedByteBuffer
     length uint32
 }
 
-func NewParser (r io.Reader) *Parser {
-    return &Parser {
+func NewLexer (r io.Reader) *Lexer {
+    return &Lexer {
         r,
         util.NewFixedByteBuffer(make([]byte, BUFFER_SIZE), 0, BUFFER_SIZE, 0, 0),
         uint32(0),
@@ -79,7 +79,7 @@ func isWord (c byte) bool {
 // look-ahead so as to save memory. Thus, when compact()ing
 // the buffer, the token being curretly read has to be
 // saved from oblivion.
-func (lex *Parser) compact () {
+func (lex *Lexer) compact () {
     log("compacting: %s", lex.buf.Stats())
     if lex.length > 0 {
         log("stepbacking length(%d) bytes", lex.length)
@@ -95,7 +95,7 @@ func (lex *Parser) compact () {
 // Make sure that a buffer can always provide.
 // Also, temporarily supress EOF when there are still
 // buffered bytes to process.
-func (lex *Parser) fillBuffer () error {
+func (lex *Lexer) fillBuffer () error {
     log("filling buffer")
     lex.compact()
     if (lex.buf.Available() == 0) {
@@ -122,7 +122,7 @@ func (lex *Parser) fillBuffer () error {
 //
 // Read a byte from the buffer, and fill it if necessary.
 // Will never return a meaningful byte and an error together.
-func (lex *Parser) readByte () (byte, error) {
+func (lex *Lexer) readByte () (byte, error) {
     log("reading byte")
     var err error
     for ; lex.buf.Available() == 0 && err == nil; err = lex.fillBuffer() {
@@ -137,7 +137,7 @@ func (lex *Parser) readByte () (byte, error) {
 //
 // Unread the last read byte, so that it becomes available for
 // reading again.
-func (lex *Parser) unreadByte (n uint32) error {
+func (lex *Lexer) unreadByte (n uint32) error {
     log("unreading %d bytes... %s", n, lex.buf.Stats())
     err := lex.buf.StepBack(n)
     if err != nil {
@@ -151,7 +151,7 @@ func (lex *Parser) unreadByte (n uint32) error {
 //
 // Consumes all chars that are of no interest to anyone (like whitespace)
 // without keeping track of anything.
-func (lex *Parser) consumeSpace () error {
+func (lex *Lexer) consumeSpace () error {
     log("consuming space, length=%d %s", lex.length, lex.buf.Stats())
     c, err := lex.readByte()
     for ; !isWord(c) && err == nil; c, err = lex.readByte() {
@@ -169,7 +169,7 @@ func (lex *Parser) consumeSpace () error {
 // it marks the last read token.
 // Whitespace is ignored and the token is formulated
 // according to the given predicate for characters.
-func (lex *Parser) readWhile (pred func(byte)bool, maxbytes uint32) error {
+func (lex *Lexer) readWhile (pred func(byte)bool, maxbytes uint32) error {
     if err := lex.consumeSpace(); err != nil {
         return err
     }
@@ -205,7 +205,7 @@ func (lex *Parser) readWhile (pred func(byte)bool, maxbytes uint32) error {
 // a command according to the grammar.
 // If no error is returned, the current
 // token can be accessed by Token().
-func (lex *Parser) ReadCommand () error {
+func (lex *Lexer) ReadCommand () error {
     return lex.readWhile(isCommand, MAX_COMMAND_SIZE)
 }
 
@@ -215,7 +215,7 @@ func (lex *Parser) ReadCommand () error {
 // be a key according to the grammar.
 // If no error is returned, the current
 // token can be accessed by Token().
-func (lex *Parser) ReadKey () error {
+func (lex *Lexer) ReadKey () error {
     return lex.readWhile(isWord, MAX_KEY_SIZE)
 }
 
@@ -225,13 +225,13 @@ func (lex *Parser) ReadKey () error {
 // be a value according to the grammar.
 // If no error is returned, the current
 // token can be accessed by Token().
-func (lex *Parser) ReadValue () error {
+func (lex *Lexer) ReadValue () error {
     return lex.readWhile(isWord, MAX_VALUE_SIZE)
 }
 //
 // Return a slice view of the current
 // token read, in the buffer memory.
-func (lex *Parser) Token () []byte {
+func (lex *Lexer) Token () []byte {
     tok, err := lex.buf.Snapshot(lex.length)
     if err != nil {
         return nil
