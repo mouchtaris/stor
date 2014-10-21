@@ -1,12 +1,10 @@
 pkgdir = _build/topcoder.com/mouchtaris
 
 ${pkgdir}/%.o: src/topcoder.com/mouchtaris/%/*.go
-	gccgo -I _build -g -O0 -c -o $@ -pedantic -Wall -Wextra $^
+	@echo GO $*
+	@gccgo -I _build -g -O0 -c -o $@ -pedantic -Wall -Wextra $^
 
 dirs = \
-	${pkgdir}/scs/cache \
-	${pkgdir}/scs/lex \
-	${pkgdir}/scs/parser/action \
 	${pkgdir}/scs/parser \
 
 all: gcc go
@@ -17,6 +15,7 @@ ${dirs}:
 	mkdir -pv $@
 scs: \
      ${pkgdir}/scs/util.o \
+     ${pkgdir}/scs/net.o \
      ${pkgdir}/scs/cache.o \
      ${pkgdir}/scs/command.o \
      ${pkgdir}/scs/lex.o \
