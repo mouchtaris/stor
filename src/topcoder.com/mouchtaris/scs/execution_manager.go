@@ -10,7 +10,14 @@ package scs
 // It can also limit the amount of tasks that can be
 // waiting in the queue to be started.
 //
-type ExecutionManager struct {
+type ExecutionManager interface {
+    Join ()
+    Execute (Task)
+}
+
+type Task func ()
+
+type executionManager struct {
     sem     chan byte
     done    chan byte
     waiting chan Task
@@ -19,36 +26,34 @@ type ExecutionManager struct {
 
 //
 // Construct a new ExecutionManager
-func NewExecutionManager (max_queued, max_running uint16) {
-    return &ExecutionManager {
+func NewExecutionManager (max_queued, max_running uint16) ExecutionManager {
+    return &executionManager {
         sem:        make(chan byte, max_running),
         done:       make(chan byte, max_running),
-        waiting:    make(chan byte, max_queued),
+        waiting:    make(chan Task, max_queued),
         running:    0,
     }
 }
 
 //
 //
-func (em *ExecutionManager) drainDone () {
-    done := uint32(0)
+func (em *executionManager) drainDone () {
     for cont := true; cont; {
         select {
         case <-em.done:
-            done++
+            em.running--
         default:
             cont = false
         }
     }
-    em.running -= done
 }
 
 //
 //
-func (em *ExecutionManager) jobSemaphoreDown () {
+func (em *executionManager) jobSemaphoreDown () {
     defer func () {
         em.running++
-    }
+    }()
 
     select {
     case em.sem <- 1:
@@ -61,7 +66,7 @@ func (em *ExecutionManager) jobSemaphoreDown () {
 
 //
 //
-func (em *ExecutionManager) startTask (t Task) {
+func (em *executionManager) startTask (t Task) {
     em.jobSemaphoreDown()
     go em.wrapTaskReturn(t)
 }
@@ -70,10 +75,19 @@ func (em *ExecutionManager) startTask (t Task) {
 // Add a task to the waiting list to be executed.
 //
 // When there are less than max_running routines executing,
-// t will start executing.
+// t will start executing. Otherwise this method will
+// block until there are available execution slots.
 //
-func (em *ExecutionManager) Execute (t Task) {
+func (em *executionManager) Execute (t Task) {
    em.startTask(t)
+}
+
+//
+// Wait for all running tasks to finish.
+func (em *executionManager) Join () {
+    for ; em.running > 0; em.running-- {
+        <-em.done
+    }
 }
 
 ///////////////////////
@@ -82,14 +96,14 @@ func (em *ExecutionManager) Execute (t Task) {
 
 //
 //
-func (em *ExecutionManager) jobSemaphoreUp () {
+func (em *executionManager) jobSemaphoreUp () {
     em.done <- 1
     <-em.sem
 }
 
 //
 //
-func (em* ExecutionManager) wrapTaskReturn (t Task) {
+func (em *executionManager) wrapTaskReturn (t Task) {
     t()
     em.jobSemaphoreUp()
 }
