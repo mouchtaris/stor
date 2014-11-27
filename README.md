@@ -8,19 +8,23 @@ It is currenly being refactored into a more senseful architecture in the "next" 
 
 ## Run up the server
 
-Read file "HACKIG" for building instructions and how to start up the server. The server will run in the foreground and can be stopped by sending it the INT signal.
+Read file "HACK" for building instructions and how to start up the server. The server will run in the foreground and can be stopped by sending it the INT signal.
 
 ## Stor and restor
 
 Stor supports five basic commands with very simple syntax:
 
-* **set** _key_ **\r\n** _value_ **\r\n**: store value _value_ under key _key_. Notice there is a maximum size for keys and values (in the parser code). Server response: **STORED**.
-* **get** _key,_ _..._ **\r\n**: retrieve values under each _key_, previously stored with a _set_ command. Server response **VALUE** _key_ **\r\n** _value_ for each _key_.
-* **delete** _key_ **\r\n**: delete the entry under _key_. Server response: **DELETED** or **NOT_FOUND** followed by **\r\n**.
-* **stats** **\r\n**: request some server stats, like number of get-s, set-s, cache hits and misses, etc. Server response: all these followed by **END** **\r\n**.
-* **quit** **\r\n**: signal end-of-communication with the server. The server will close the connection after this. Server response: none.
+* **"set** _key_ **\r\n** _value_ **\r\n"**: store value _value_ under key _key_. Notice there is a maximum size for keys and values (in the parser code). Server response: **"STORED\r\n"**.
+* **"get** _key,_ _..._ **\r\n"**: retrieve values under each _key_, previously stored with a _set_ command. Server response **"VALUE** _key_ **\r\n** _value_ **\r\n"** for each _key_.
+* **"delete** _key_ **\r\n"**: delete the entry under _key_. Server response: **"DELETED\r\n"** or **"NOT_FOUND\r\n"**.
+* **"stats** **\r\n"**: request some server stats, like number of get-s, set-s, cache hits and misses, etc. Server response: all these followed by **"END\r\n"**.
+* **"quit \r\n"**: signal end-of-communication with the server. The server will close the connection after this. Server response: _nada_.
 
-**NOTICE** that in order to read the server's responses without I/O blocks, one should always send the _quit_ command first.
+Whitespace is generally ignored, except in _value_ fields.
+
+**NOTICE** that server's responses are asynchronous. There is strong decoupling among connection accepting, command parsing, and command dispatching. That means that depending on thread scheduling (or should we say "go-routine"s), responses may come much later than the command has been parsed. Commands are still executed in the order that they are received, of course. But the consequence of that is that response messages may never reach the client if there is a parsing error before the commands are dispatched, for instance. 
+
+Also, in order to read server responses expecting an EOF, one should always send the _quit_ command first (but then this requires a new connection for further commands).
 
 ## Example in Ruby
 
